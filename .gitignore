@@ -1,0 +1,9 @@
+
+*.swp
+*.temp
+temp*
+
+build/
+
+parser
+
