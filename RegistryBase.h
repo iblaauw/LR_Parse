@@ -16,9 +16,12 @@ protected:
     std::map<TValue, KeyType> valToKey;
     KeyType current = 0;
 
+    using key_val_map = decltype(keyToVal);
+    using val_key_map = decltype(valToKey);
+
 public:
-    using raw_val_iter = decltype(keyToVal.begin());
-    using raw_key_iter = decltype(valToKey.begin());
+    using raw_val_iter = typename decltype(keyToVal)::const_iterator;
+    using raw_key_iter = typename decltype(valToKey)::const_iterator;
 
     KeyType Register(const TValue& val)
     {
@@ -65,12 +68,12 @@ public:
     public:
         Iterator(const raw_iter& iter) : iter(iter) {}
 
-        const TValue& operator*() const
+        const auto operator*() const -> const decltype(iter->second)&
         {
             return iter->second;
         }
 
-        const TValue* operator->() const
+        const auto operator->() const -> const decltype(iter->second)*
         {
             return &(iter->second);
         }
@@ -79,6 +82,16 @@ public:
         {
             iter++;
             return *this;
+        }
+
+        bool operator==(const Iterator& other) const
+        {
+            return iter == other.iter;
+        }
+
+        bool operator!=(const Iterator& other) const
+        {
+            return iter != other.iter;
         }
     };
 
