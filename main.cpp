@@ -37,14 +37,8 @@ void SetupLexer(Lexer& lex)
     lex.standAlones = { '(', ')', '{', '}', '[', ']', ';' };
 }
 
-void SetupSymbols(SymbolRegistry& symbols, TokenRegistry& tokReg)
+void SetupSymbols(SymbolRegistry& symbols)
 {
-    // Every token is also a symbol
-    for (auto iter = tokReg.begin_val(); iter != tokReg.end_val(); ++iter)
-    {
-        symbols.Register(*iter);
-    }
-
     Symbol start = symbols.Register("Program");
     symbols.SetStartSymbol(start);
 
@@ -111,7 +105,8 @@ int main()
     Lexer lexer(infile, tokenRegistry);
     SetupLexer(lexer);
 
-    SetupSymbols(symbolRegistry, tokenRegistry);
+    symbolRegistry.InitWithTerminals(tokenRegistry);
+    SetupSymbols(symbolRegistry);
     SetupRules(ruleRegistry, symbolRegistry);
 
     PrintLexerAll(lexer, tokenRegistry);

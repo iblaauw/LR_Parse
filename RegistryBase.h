@@ -99,5 +99,7 @@ public:
     Iterator<raw_key_iter> end() const { return Iterator<raw_key_iter>(valToKey.end()); }
     Iterator<raw_val_iter> begin_val() const { return Iterator<raw_val_iter>(keyToVal.begin()); }
     Iterator<raw_val_iter> end_val() const { return Iterator<raw_val_iter>(keyToVal.end()); }
+
+    size_t size() const { return keyToVal.size(); }
 };
 
