@@ -1,4 +1,5 @@
 #include "FirstTree.h"
+#include "RuleProperties.h"
 
 FirstTree::FirstTree(const RuleRegistry& rules, const SymbolRegistry& symbols)
     : rules(rules), symbols(symbols), symbolData(symbols.size()), firstData(symbols.size())
@@ -20,7 +21,7 @@ void FirstTree::Build(const INullableProperty& nullable)
 
 void FirstTree::Run()
 {
-    Symbol nullSymbol = symbols.GetValue(RuleProperties::NULL_TOKEN);
+    Symbol nullSymbol = symbols.Get(RuleProperties::NULL_TOKEN);
 
     // Put all terminals into the queue (except NULL)
     for (int i = 0; i < symbols.GetTerminalBoundary(); i++)
@@ -34,7 +35,7 @@ void FirstTree::Run()
     DoRun();
 }
 
-void FirstTree:GetFirst(Symbol s, std::vector<Symbol>& firstOut) const
+void FirstTree::GetFirst(Symbol s, std::vector<Symbol>& firstOut) const
 {
     firstOut.clear();
     const auto& firsts = firstData[s];
@@ -49,14 +50,14 @@ void FirstTree::DoRun()
         {
             auto s = symbolQueue.front();
             symbolQueue.pop();
-            HandleSymbol(s->first, s->second);
+            HandleSymbol(s.first, s.second);
         }
 
         if (ruleQueue.size() > 0)
         {
             auto r = ruleQueue.front();
             ruleQueue.pop();
-            HandleRule(r->first, r->second);
+            HandleRule(r.first, r.second);
         }
     }
 }

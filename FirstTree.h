@@ -6,8 +6,9 @@
 
 #include "Rule.h"
 #include "SymbolRegistry.h"
+#include "Properties.h"
 
-class FirstTree
+class FirstTree : public IFirstProperty
 {
 private:
     struct SymbolNode {
@@ -29,7 +30,7 @@ public:
     void Build(const INullableProperty& nullable);
     void Run();
 
-    void GetFirst(Symbol s, std::vector<Symbol>& firstOut) const;
+    void GetFirst(Symbol s, std::vector<Symbol>& firstOut) const override;
 
 private:
     void DoRun();

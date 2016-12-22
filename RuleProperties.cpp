@@ -15,6 +15,9 @@ void RuleProperties::Compute()
 
     Symbol nullSymbol = symbols.Get(NULL_TOKEN);
     nullable.Run(nullSymbol);
+
+    firstTree.Build(nullable);
+    firstTree.Run();
 }
 
 

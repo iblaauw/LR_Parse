@@ -47,7 +47,7 @@ void NullableTree::DoRun()
 
 void NullableTree::HandleSymbol(Symbol s)
 {
-    if (IsNull(s))
+    if (symbolData[s].isNull)
         return;
 
     symbolData[s].isNull = true;
@@ -64,7 +64,7 @@ void NullableTree::HandleRule(RuleId id)
 
     for (Symbol s : rule.body)
     {
-        if (!IsNull(s))
+        if (!symbolData[s].isNull)
             return;
     }
 

@@ -7,7 +7,7 @@
 #include "Rule.h"
 #include "Properties.h"
 
-class NullableTree : INullableProperty
+class NullableTree : public INullableProperty
 {
 private:
     struct SymbolNode {
@@ -27,7 +27,7 @@ public:
     void Build();
     void Run(Symbol nullSymbol);
 
-    inline bool IsNull(Symbol s) const { return symbolData[s].isNull; };
+    bool IsNullable(Symbol s) const override { return symbolData[s].isNull; };
 
 private:
     void DoRun();
