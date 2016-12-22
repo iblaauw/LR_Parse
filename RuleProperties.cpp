@@ -3,7 +3,7 @@
 /*static*/ const std::string RuleProperties::NULL_TOKEN = "NULL";
 
 RuleProperties::RuleProperties(const RuleRegistry& rules, SymbolRegistry& symbols)
-    : rules(rules), symbols(symbols), nullable(rules, symbols)
+    : rules(rules), symbols(symbols), nullable(rules, symbols), firstTree(rules, symbols)
 {
 }
 

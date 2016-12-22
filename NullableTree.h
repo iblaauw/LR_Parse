@@ -5,8 +5,9 @@
 
 #include "SymbolRegistry.h"
 #include "Rule.h"
+#include "Properties.h"
 
-class NullableTree
+class NullableTree : INullableProperty
 {
 private:
     struct SymbolNode {
