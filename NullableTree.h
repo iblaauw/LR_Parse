@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <queue>
 
 #include "SymbolRegistry.h"
 #include "Rule.h"
@@ -14,10 +15,8 @@ private:
     };
 
     const RuleRegistry& rules;
-    const SymbolRegistry& symbols;
 
     std::vector<SymbolNode> symbolData;
-    std::vector<bool> ruleData;
 
     std::queue<Symbol> symbolQueue;
     std::queue<RuleId> ruleQueue;
@@ -25,7 +24,7 @@ private:
 public:
     NullableTree(const RuleRegistry& rules, const SymbolRegistry& symbols);
     void Build();
-    void Run();
+    void Run(Symbol nullSymbol);
 
     inline bool IsNull(Symbol s) const { return symbolData[s].isNull; };
 

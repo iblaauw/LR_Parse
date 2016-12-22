@@ -30,5 +30,11 @@ public:
     RuleId GetId(const Rule& rule) const;
     const Rule& GetRule(RuleId id) const;
     void GetRulesForHead(Symbol head, std::vector<RuleId>& rulesOut) const;
+
+    inline auto begin() const -> decltype(RegistryBase<Rule>::begin())
+    { return RegistryBase<Rule>::begin(); }
+
+    inline auto end() const -> decltype(RegistryBase<Rule>::end())
+    { return RegistryBase<Rule>::end(); }
 };
 

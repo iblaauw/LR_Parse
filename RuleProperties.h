@@ -4,6 +4,7 @@
 
 #include "Rule.h"
 #include "SymbolRegistry.h"
+#include "NullableTree.h"
 
 class RuleProperties
 {
@@ -11,18 +12,15 @@ private:
     const RuleRegistry& rules;
     SymbolRegistry& symbols;
 
-    std::vector<bool> nullable;
+    NullableTree nullable;
 public:
-    static const std::string NULL_TOKEN = "NULL";
+    static const std::string NULL_TOKEN;
 
     RuleProperties(const RuleRegistry& rules, SymbolRegistry& symbols);
 
-    void FindNullable();
-    bool IsNullable(Symbol symbol);
-
-private:
-    bool ComputeNullable(Symbol symbol, std::vector<bool>& isset);
-    bool ComputeRuleNullable(RuleId ruleid, Symbol s, std::vector<bool>& isset);
+    void Compute();
+    inline bool IsNullable(Symbol symbol) const { return nullable.IsNull(symbol); }
 
 };
+
 

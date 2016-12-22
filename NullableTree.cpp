@@ -1,14 +1,16 @@
 #include "NullableTree.h"
 
 NullableTree::NullableTree(const RuleRegistry& rules, const SymbolRegistry& symbols)
-    : rules(rules), symbols(symbols), symbolData(symbols.size()), ruleData(rules.size())
+    : rules(rules), symbolData(symbols.size())
 {}
+
+#include <iostream>
 
 void NullableTree::Build()
 {
     for (RuleId id : rules)
     {
-        const Rule& rule = rules.GetValue(id);
+        const Rule& rule = rules.GetRule(id);
         for (Symbol val : rule.body)
         {
             symbolData[val].parents.push_back(id);
@@ -16,33 +18,34 @@ void NullableTree::Build()
     }
 }
 
-void Run()
+void NullableTree::Run(Symbol nullSymbol)
 {
-    Symbol s = symbols.Get(RuleProperties::NULL_TOKEN);
-    symbolQueue.push(s);
+    symbolQueue.push(nullSymbol);
 
     DoRun();
 }
 
-void DoRun()
+void NullableTree::DoRun()
 {
-    while (symbolQueue.size() > 0 && ruleQueue.size() > 0)
+    while (symbolQueue.size() > 0 || ruleQueue.size() > 0)
     {
         if (symbolQueue.size() > 0)
         {
-            Symbol s = symbolQueue.pop();
+            Symbol s = symbolQueue.front();
+            symbolQueue.pop();
             HandleSymbol(s);
         }
 
         if (ruleQueue.size() > 0)
         {
-            RuleId id = ruleQueue.pop();
+            RuleId id = ruleQueue.front();
+            ruleQueue.pop();
             HandleRule(id);
         }
     }
 }
 
-void HandleSymbol(Symbol s)
+void NullableTree::HandleSymbol(Symbol s)
 {
     if (IsNull(s))
         return;
@@ -55,9 +58,9 @@ void HandleSymbol(Symbol s)
     }
 }
 
-void HandleRule(RuleId id)
+void NullableTree::HandleRule(RuleId id)
 {
-    const Rule& rule = rules.GetValue(id);
+    const Rule& rule = rules.GetRule(id);
 
     for (Symbol s : rule.body)
     {
