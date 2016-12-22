@@ -42,6 +42,7 @@ void SetupSymbols(SymbolRegistry& symbols)
     Symbol start = symbols.Register("Program");
     symbols.SetStartSymbol(start);
 
+    symbols.Register(RuleProperties::NULL_TOKEN);
     symbols.Register("StatementBlock");
     symbols.Register("Statement");
     symbols.Register("Expression");

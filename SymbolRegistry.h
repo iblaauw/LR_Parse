@@ -19,6 +19,8 @@ public:
     Symbol GetStartSymbol() const;
     inline Symbol GetPseudoStartSymbol() const { return PSEUDO_START; }
     inline bool IsTerminal(Symbol symbol) const { return symbol >= 0 && symbol < terminalBoundary; }
+
+    inline Symbol GetTerminalBoundary() const { return terminalBoundary; }
 };
 
 
