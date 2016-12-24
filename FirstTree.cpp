@@ -35,13 +35,6 @@ void FirstTree::Run()
     DoRun();
 }
 
-void FirstTree::GetFirst(Symbol s, std::vector<Symbol>& firstOut) const
-{
-    firstOut.clear();
-    const auto& firsts = firstData[s];
-    firstOut.insert(firstOut.begin(), firsts.begin(), firsts.end());
-}
-
 void FirstTree::DoRun()
 {
     while (symbolQueue.size() > 0 || ruleQueue.size() > 0)

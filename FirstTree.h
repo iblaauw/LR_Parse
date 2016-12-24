@@ -19,7 +19,7 @@ private:
     const SymbolRegistry& symbols;
 
     std::vector<SymbolNode> symbolData;
-    std::vector<std::unordered_set<Symbol>> firstData;
+    std::vector<SymbolSet> firstData;
 
     std::queue<std::pair<Symbol, Symbol>> symbolQueue;
     std::queue<std::pair<RuleId, Symbol>> ruleQueue;
@@ -30,7 +30,10 @@ public:
     void Build(const INullableProperty& nullable);
     void Run();
 
-    void GetFirst(Symbol s, std::vector<Symbol>& firstOut) const override;
+    inline const SymbolSet& GetFirst(Symbol s) const override
+    {
+        return firstData[s];
+    }
 
 private:
     void DoRun();

@@ -51,7 +51,7 @@ void SetupSymbols(SymbolRegistry& symbols)
     symbols.Register("Expression");
 }
 
-void SetupRules(RuleRegistry& ruleReg, SymbolRegistry& symbols)
+void SetupRules(RuleRegistry& ruleReg, const SymbolRegistry& symbols)
 {
     // Program -> StatementBlock
     // StatementBlock -> StatementBlock Statement
@@ -63,22 +63,23 @@ void SetupRules(RuleRegistry& ruleReg, SymbolRegistry& symbols)
 
     std::vector<Rule> rules;
 
-    rules.push_back({ symbols.Get("Program"), { symbols.Get("StatementBlock") } });
-    rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("StatementBlock"), symbols.Get("Statement") } });
-    rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("NULL") } });
-    rules.push_back({ symbols.Get("Statement"), { symbols.Get("Expression"), symbols.Get(";") } });
-    rules.push_back({ symbols.Get("Expression"), { symbols.Get("Expression"), symbols.Get("OPERATOR"), symbols.Get("Expression") } });
-    rules.push_back({ symbols.Get("Expression"), { symbols.Get("NUMBER") } });
-    rules.push_back({ symbols.Get("Expression"), { symbols.Get("IDENTIFIER") } });
-
     //rules.push_back({ symbols.Get("Program"), { symbols.Get("StatementBlock") } });
-    //rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("Statement"), symbols.Get("Expression") } });
-    //rules.push_back({ symbols.Get("Statement"), { symbols.Get("Expression") } });
-    //rules.push_back({ symbols.Get("Statement"), { symbols.Get("IDENTIFIER") } });
-    //rules.push_back({ symbols.Get("Expression"), { symbols.Get("Statement") } });
-    //rules.push_back({ symbols.Get("Expression"), { symbols.Get("OPERATOR") } });
-    //rules.push_back({ symbols.Get("Expression"), { symbols.Get("NULL") } });
+    //rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("StatementBlock"), symbols.Get("Statement") } });
+    //rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("NULL") } });
+    //rules.push_back({ symbols.Get("Statement"), { symbols.Get("Expression"), symbols.Get(";") } });
+    //rules.push_back({ symbols.Get("Expression"), { symbols.Get("Expression"), symbols.Get("OPERATOR"), symbols.Get("Expression") } });
+    //rules.push_back({ symbols.Get("Expression"), { symbols.Get("NUMBER") } });
+    //rules.push_back({ symbols.Get("Expression"), { symbols.Get("IDENTIFIER") } });
 
+    rules.push_back({ symbols.Get("Program"), { symbols.Get("StatementBlock") } });
+    rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("Statement"), symbols.Get("Expression") } });
+    rules.push_back({ symbols.Get("Statement"), { symbols.Get("Expression") } });
+    rules.push_back({ symbols.Get("Statement"), { symbols.Get("IDENTIFIER") } });
+    rules.push_back({ symbols.Get("Expression"), { symbols.Get("Statement") } });
+    rules.push_back({ symbols.Get("Expression"), { symbols.Get("OPERATOR") } });
+    rules.push_back({ symbols.Get("Expression"), { symbols.Get("NULL") } });
+
+    ruleReg.CreatePseudoRule(symbols);
     for (Rule& r : rules)
     {
         ruleReg.Register(r);
@@ -155,8 +156,7 @@ void PrintFirst(const SymbolRegistry& symbols, const RuleProperties& props)
     for (Symbol s : symbols)
     {
         std::string name = symbols.GetValue(s);
-        std::vector<Symbol> first;
-        props.GetFirst(s, first);
+        const SymbolSet& first = props.GetFirst(s);
         std::cout << name << ": ";
         for (Symbol s2 : first)
         {
@@ -172,10 +172,9 @@ void PrintFollow(const SymbolRegistry& symbols, const RuleProperties& props)
     for (Symbol s : symbols)
     {
         std::string name = symbols.GetValue(s);
-        std::vector<Symbol> first;
-        props.GetFollow(s, first);
+        const SymbolSet& follow = props.GetFollow(s);
         std::cout << name << ": ";
-        for (Symbol s2 : first)
+        for (Symbol s2 : follow)
         {
             std::cout << symbols.GetValue(s2) << " ";
         }

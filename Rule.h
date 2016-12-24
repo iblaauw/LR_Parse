@@ -26,6 +26,7 @@ private:
 public:
     RuleId Register(const Rule& rule);
     RuleId GetOrRegister(const Rule& rule);
+    RuleId CreatePseudoRule(const SymbolRegistry& symbols);
 
     RuleId GetId(const Rule& rule) const;
     const Rule& GetRule(RuleId id) const;

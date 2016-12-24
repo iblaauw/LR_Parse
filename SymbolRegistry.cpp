@@ -8,6 +8,8 @@ void SymbolRegistry::InitWithTerminals(const TokenRegistry& tokens)
     }
 
     terminalBoundary = this->current;
+
+    pseudoStart = Register("PSEUDOSTART");
 }
 
 void SymbolRegistry::SetStartSymbol(Symbol symbol)

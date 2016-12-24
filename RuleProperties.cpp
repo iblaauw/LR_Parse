@@ -20,7 +20,7 @@ void RuleProperties::Compute()
     firstTree.Build(nullable);
     firstTree.Run();
 
-    followTree.Build(symbols, nullable);
+    followTree.Build(nullable);
     followTree.Run(firstTree);
 }
 

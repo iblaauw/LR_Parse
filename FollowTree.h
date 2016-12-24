@@ -2,7 +2,6 @@
 
 #include <queue>
 #include <vector>
-#include <unordered_set>
 #include <set>
 
 #include "Properties.h"
@@ -17,8 +16,9 @@ private:
     };
 
     const RuleRegistry& rules;
+    const SymbolRegistry& symbols;
 
-    std::vector<std::unordered_set<Symbol>> followData;
+    std::vector<SymbolSet> followData;
 
     std::vector<SymbolNode> followDependencies;
     std::vector<SymbolNode> firstDependencies;
@@ -26,19 +26,21 @@ private:
     std::queue<std::pair<Symbol, Symbol>> symbolQueue;
 public:
     FollowTree(const RuleRegistry& rules, const SymbolRegistry& symbols);
-    void Build(const SymbolRegistry& symbols, const INullableProperty& nullable);
+    void Build(const INullableProperty& nullable);
     void Run(const IFirstProperty& firstProp);
 
-    void GetFollow(Symbol symbol, std::vector<Symbol>& followOut) const override;
+    inline const SymbolSet& GetFollow(Symbol symbol) const override
+    {
+        return followData[symbol];
+    }
 private:
-    void DoRun(const IFirstProperty& firstProp);
+    void DoRun();
 
-    void BuildForRule(const Rule& rule, const INullableProperty& nullable,
-                      const SymbolRegistry& symbols);
+    void BuildForRule(const Rule& rule, const INullableProperty& nullable);
 
     void InitQueue(const IFirstProperty& firstProp);
 
-    void HandleSymbol(Symbol s, Symbol firstOf, const IFirstProperty& firstProp);
+    void HandleSymbol(Symbol s, Symbol val);
 };
 
 

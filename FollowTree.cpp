@@ -3,45 +3,43 @@
 #include <iostream>
 
 FollowTree::FollowTree(const RuleRegistry& rules, const SymbolRegistry& symbols)
-    : rules(rules), followData(symbols.size()), followDependencies(symbols.size()),
-      firstDependencies(symbols.size())
+    : rules(rules), symbols(symbols), followData(symbols.size()),
+      followDependencies(symbols.size()), firstDependencies(symbols.size())
 {}
 
-void FollowTree::Build(const SymbolRegistry& symbols, const INullableProperty& nullable)
+void FollowTree::Build(const INullableProperty& nullable)
 {
     for (RuleId rid : rules)
     {
         const Rule& rule = rules.GetRule(rid);
-        BuildForRule(rule, nullable, symbols);
+        BuildForRule(rule, nullable);
     }
 }
 
 void FollowTree::Run(const IFirstProperty& firstProp)
 {
+    // Add that the PSEUDOSTART must FOLLOW with EOF
+    Symbol pstart = symbols.GetPseudoStartSymbol();
+    Symbol eofSymbol = symbols.Get("EOF");
+    symbolQueue.emplace(pstart, eofSymbol);
+
     InitQueue(firstProp);
     firstDependencies.clear();
-    DoRun(firstProp);
+    DoRun();
     followDependencies.clear();
 }
 
-void FollowTree::GetFollow(Symbol symbol, std::vector<Symbol>& followOut) const
-{
-    followOut.clear();
-    const auto& set = followData[symbol];
-    followOut.insert(followOut.begin(), set.begin(), set.end());
-}
-
-void FollowTree::DoRun(const IFirstProperty& firstProp)
+void FollowTree::DoRun()
 {
     while (symbolQueue.size() > 0)
     {
         auto val = symbolQueue.front();
         symbolQueue.pop();
-        HandleSymbol(val.first, val.second, firstProp);
+        HandleSymbol(val.first, val.second);
     }
 }
 
-void FollowTree::BuildForRule(const Rule& rule, const INullableProperty& nullable, const SymbolRegistry& symbols)
+void FollowTree::BuildForRule(const Rule& rule, const INullableProperty& nullable)
 {
     size_t size = rule.body.size();
 
@@ -94,34 +92,32 @@ void FollowTree::InitQueue(const IFirstProperty& firstProp)
     {
         const auto& node = firstDependencies[i];
         Symbol firstFor = i;
+
+        const SymbolSet& firstVals = firstProp.GetFirst(firstFor);
+
         for (Symbol par : node.parents)
         {
-            symbolQueue.emplace(par, firstFor);
+            for (Symbol fval : firstVals)
+            {
+                symbolQueue.emplace(par, fval);
+            }
         }
     }
 }
 
-void FollowTree::HandleSymbol(Symbol s, Symbol firstOf, const IFirstProperty& firstProp)
+void FollowTree::HandleSymbol(Symbol s, Symbol val)
 {
-    std::vector<Symbol> firstVals;
-    firstProp.GetFirst(firstOf, firstVals);
-
-    size_t original = followData[s].size();
-
-    // Insert FIRST vals into FOLLOW set
-    for (Symbol sf : firstVals)
-    {
-        followData[s].insert(sf);
-    }
-
     // Don't propagate if there was no change (this ends infinite loops)
     // Anything that was already in FOLLOW must have been propagated already
-    if (followData[s].size() == original)
+    if (followData[s].count(val))
         return;
 
+    followData[s].insert(val);
+
+    // Propagate
     for (Symbol parent : followDependencies[s].parents)
     {
-        symbolQueue.emplace(parent, firstOf);
+        symbolQueue.emplace(parent, val);
     }
 }
 

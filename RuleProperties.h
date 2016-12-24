@@ -26,14 +26,14 @@ public:
     void Compute();
     inline bool IsNullable(Symbol symbol) const override { return nullable.IsNullable(symbol); }
 
-    inline void GetFirst(Symbol symbol, std::vector<Symbol>& firstOut) const override
+    inline const SymbolSet& GetFirst(Symbol symbol) const override
     {
-        firstTree.GetFirst(symbol, firstOut);
+        return firstTree.GetFirst(symbol);
     }
 
-    inline void GetFollow(Symbol symbol, std::vector<Symbol>& followOut) const override
+    inline const SymbolSet& GetFollow(Symbol symbol) const override
     {
-        followTree.GetFollow(symbol, followOut);
+        return followTree.GetFollow(symbol);
     }
 };
 

@@ -1,6 +1,10 @@
 #pragma once
 
+#include <unordered_set>
+
 #include "SymbolRegistry.h"
+
+using SymbolSet = std::unordered_set<Symbol>;
 
 class INullableProperty
 {
@@ -11,13 +15,13 @@ public:
 class IFirstProperty
 {
 public:
-    virtual void GetFirst(Symbol symbol, std::vector<Symbol>& firstOut) const = 0;
+    virtual const SymbolSet& GetFirst(Symbol symbol) const = 0;
 };
 
 class IFollowProperty
 {
 public:
-    virtual void GetFollow(Symbol symbol, std::vector<Symbol>& followOut) const = 0;
+    virtual const SymbolSet& GetFollow(Symbol symbol) const = 0;
 };
 
 
