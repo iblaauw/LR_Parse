@@ -106,6 +106,16 @@ void PrintLexerAll(Lexer& lex, const TokenRegistry& reg)
     }
 }
 
+void PrintSymbols(const SymbolRegistry& symbols)
+{
+    std::cout << std::endl;
+    for (unsigned int i = 0; i < symbols.size(); i++)
+    {
+        std::cout << "Symbol " << i << ": " << symbols.GetValue(i) << std::endl;
+    }
+    std::cout << std::endl;
+}
+
 void PrintRule(const Rule& rule, const SymbolRegistry& symbols)
 {
     std::cout << symbols.GetValue(rule.head) << " -> ";
@@ -156,6 +166,23 @@ void PrintFirst(const SymbolRegistry& symbols, const RuleProperties& props)
     }
 }
 
+void PrintFollow(const SymbolRegistry& symbols, const RuleProperties& props)
+{
+    std::cout << std::endl << "FOLLOW:" << std::endl;
+    for (Symbol s : symbols)
+    {
+        std::string name = symbols.GetValue(s);
+        std::vector<Symbol> first;
+        props.GetFollow(s, first);
+        std::cout << name << ": ";
+        for (Symbol s2 : first)
+        {
+            std::cout << symbols.GetValue(s2) << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
 int main()
 {
     std::ifstream infile("input.test");
@@ -175,6 +202,8 @@ int main()
 
     PrintLexerAll(lexer, tokenRegistry);
 
+    PrintSymbols(symbolRegistry);
+
     PrintRules(ruleRegistry, symbolRegistry);
 
     RuleProperties properties(ruleRegistry, symbolRegistry);
@@ -182,6 +211,7 @@ int main()
 
     PrintNullable(symbolRegistry, properties);
     PrintFirst(symbolRegistry, properties);
+    PrintFollow(symbolRegistry, properties);
 
     return 0;
 }

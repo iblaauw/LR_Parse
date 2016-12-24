@@ -3,7 +3,8 @@
 /*static*/ const std::string RuleProperties::NULL_TOKEN = "NULL";
 
 RuleProperties::RuleProperties(const RuleRegistry& rules, SymbolRegistry& symbols)
-    : rules(rules), symbols(symbols), nullable(rules, symbols), firstTree(rules, symbols)
+    : rules(rules), symbols(symbols), nullable(rules, symbols), firstTree(rules, symbols),
+      followTree(rules, symbols)
 {
 }
 
@@ -18,6 +19,9 @@ void RuleProperties::Compute()
 
     firstTree.Build(nullable);
     firstTree.Run();
+
+    followTree.Build(symbols, nullable);
+    followTree.Run(firstTree);
 }
 
 

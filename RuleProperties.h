@@ -6,9 +6,10 @@
 #include "SymbolRegistry.h"
 #include "NullableTree.h"
 #include "FirstTree.h"
+#include "FollowTree.h"
 #include "Properties.h"
 
-class RuleProperties : public INullableProperty, public IFirstProperty
+class RuleProperties : public INullableProperty, public IFirstProperty, public IFollowProperty
 {
 private:
     const RuleRegistry& rules;
@@ -16,6 +17,7 @@ private:
 
     NullableTree nullable;
     FirstTree firstTree;
+    FollowTree followTree;
 public:
     static const std::string NULL_TOKEN;
 
@@ -29,6 +31,10 @@ public:
         firstTree.GetFirst(symbol, firstOut);
     }
 
+    inline void GetFollow(Symbol symbol, std::vector<Symbol>& followOut) const override
+    {
+        followTree.GetFollow(symbol, followOut);
+    }
 };
 
 

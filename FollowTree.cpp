@@ -1,5 +1,12 @@
 #include "FollowTree.h"
 
+#include <iostream>
+
+FollowTree::FollowTree(const RuleRegistry& rules, const SymbolRegistry& symbols)
+    : rules(rules), followData(symbols.size()), followDependencies(symbols.size()),
+      firstDependencies(symbols.size())
+{}
+
 void FollowTree::Build(const SymbolRegistry& symbols, const INullableProperty& nullable)
 {
     for (RuleId rid : rules)
@@ -9,21 +16,28 @@ void FollowTree::Build(const SymbolRegistry& symbols, const INullableProperty& n
     }
 }
 
-void FollowTree::Run()
+void FollowTree::Run(const IFirstProperty& firstProp)
 {
-    InitQueue();
+    InitQueue(firstProp);
     firstDependencies.clear();
-    DoRun();
+    DoRun(firstProp);
     followDependencies.clear();
 }
 
-void FollowTree::DoRun()
+void FollowTree::GetFollow(Symbol symbol, std::vector<Symbol>& followOut) const
+{
+    followOut.clear();
+    const auto& set = followData[symbol];
+    followOut.insert(followOut.begin(), set.begin(), set.end());
+}
+
+void FollowTree::DoRun(const IFirstProperty& firstProp)
 {
     while (symbolQueue.size() > 0)
     {
         auto val = symbolQueue.front();
         symbolQueue.pop();
-        HandleSymbol(val.first, val.second);
+        HandleSymbol(val.first, val.second, firstProp);
     }
 }
 
@@ -31,15 +45,18 @@ void FollowTree::BuildForRule(const Rule& rule, const INullableProperty& nullabl
 {
     size_t size = rule.body.size();
 
+    if (size == 0)
+        return;
+
     // Do FOLLOW dependencies:
-    for (unsigned int i = size - 1; i >= 0; i--)
+    for (int i = size - 1; i >= 0; i--)
     {
         Symbol s = rule.body[i];
 
         // No point in calculating the FOLLOW of terminals, they will never propagate
         //  and they will never be used
         if (symbols.IsTerminal(s))
-            continue;
+            break;
 
         // Scenario:
         // Rule Head -> ... S
@@ -71,7 +88,7 @@ void FollowTree::BuildForRule(const Rule& rule, const INullableProperty& nullabl
     }
 }
 
-void FollowTree::InitQueue()
+void FollowTree::InitQueue(const IFirstProperty& firstProp)
 {
     for (unsigned int i = 0; i < firstDependencies.size(); ++i)
     {
@@ -84,7 +101,7 @@ void FollowTree::InitQueue()
     }
 }
 
-void FollowTree::HandleSymbol(Symbol s, Symbol firstOf)
+void FollowTree::HandleSymbol(Symbol s, Symbol firstOf, const IFirstProperty& firstProp)
 {
     std::vector<Symbol> firstVals;
     firstProp.GetFirst(firstOf, firstVals);
