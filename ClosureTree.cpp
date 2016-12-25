@@ -4,9 +4,9 @@ ClosureTree::ClosureTree(ClosureRegistry& closures)
     : closures(closures)
 {}
 
-void ClosureTree::Build(const RuleRegistry& rules, const SymbolRegistry& symbols)
+void ClosureTree::Build()
 {
-    Closure start = Closure::CreateBeginning(rules, symbols);
+    Closure start = Closure::CreateBeginning();
     State startState = closures.Register(start);
     stateQueue.push(startState);
 

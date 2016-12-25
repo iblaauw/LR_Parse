@@ -31,8 +31,10 @@ public:
         if (iter != valToKey.end())
             throw RegistryException("Value has already been registered!");
 
-        valToKey[val] = key;
-        keyToVal[key] = val;
+        valToKey.emplace(val, key);
+        keyToVal.emplace(key, val);
+        //valToKey[val] = key;
+        //keyToVal[key] = val;
         current++;
         return key;
     }
@@ -44,8 +46,11 @@ public:
             return iter->second;
 
         KeyType key = current;
-        valToKey[val] = key;
-        keyToVal[key] = val;
+
+        valToKey.emplace(val, key);
+        keyToVal.emplace(key, val);
+        //valToKey[val] = key;
+        //keyToVal[key] = val;
         current++;
         return key;
     }

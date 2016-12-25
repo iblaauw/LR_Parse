@@ -6,6 +6,7 @@
 #include "Rule.h"
 #include "RuleProperties.h"
 #include "Closure.h"
+#include "RegistryManager.h"
 
 void SetupTokens(TokenRegistry& tokenRegistry)
 {
@@ -221,9 +222,9 @@ int main()
 {
     std::ifstream infile("input.test");
 
-    TokenRegistry tokenRegistry;
-    SymbolRegistry symbolRegistry;
-    RuleRegistry ruleRegistry;
+    TokenRegistry& tokenRegistry = RegistryManager::Instance.tokens;
+    SymbolRegistry& symbolRegistry = RegistryManager::Instance.symbols;
+    RuleRegistry& ruleRegistry = RegistryManager::Instance.rules;
 
     SetupTokens(tokenRegistry);
 
@@ -248,7 +249,7 @@ int main()
     PrintFollow(symbolRegistry, properties);
 
 
-    Closure close = Closure::CreateBeginning(ruleRegistry, symbolRegistry);
+    Closure close = Closure::CreateBeginning();
     PrintClosure(close, symbolRegistry, ruleRegistry);
     Closure close2 = close.Advance(symbolRegistry.Get("Statement"));
     PrintClosure(close2, symbolRegistry, ruleRegistry);

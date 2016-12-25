@@ -20,7 +20,7 @@ private:
     std::queue<State> stateQueue;
 public:
     ClosureTree(ClosureRegistry& closures);
-    void Build(const RuleRegistry& rules, const SymbolRegistry& symbols);
+    void Build();
 
     inline const StateNode& GetNode(State state) const { return nodes.at(state); }
 

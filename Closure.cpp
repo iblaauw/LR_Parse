@@ -1,5 +1,7 @@
 #include "Closure.h"
 
+#include "RegistryManager.h"
+
 #include <cassert>
 #include <algorithm>
 
@@ -38,9 +40,12 @@ bool RulePiece::operator==(const RulePiece& other) const
     return rule == other.rule && position == other.position;
 }
 
-/*static*/ Closure Closure::CreateBeginning(const RuleRegistry& rules, const SymbolRegistry& symbols)
+/*static*/ Closure Closure::CreateBeginning()
 {
-    Closure result(rules, symbols);
+    Closure result;
+
+    const auto& rules = RegistryManager::Instance.rules;
+
     RuleId pseudoRule = rules.GetPseudoRule();
     result.rulePieces.push_back({pseudoRule, 0});
     result.Complete();
@@ -50,6 +55,9 @@ bool RulePiece::operator==(const RulePiece& other) const
 void Closure::GetAdvanceable(SymbolSet& symbolsOut) const
 {
     symbolsOut.clear();
+
+    const auto& rules = RegistryManager::Instance.rules;
+
     for (RulePiece piece : rulePieces)
     {
         if (!piece.AtEnd(rules))
@@ -61,7 +69,9 @@ void Closure::GetAdvanceable(SymbolSet& symbolsOut) const
 
 Closure Closure::Advance(Symbol s) const
 {
-    Closure result(rules, symbols);
+    Closure result;
+
+    const auto& rules = RegistryManager::Instance.rules;
 
     for (const RulePiece p : rulePieces)
     {
@@ -114,8 +124,7 @@ bool Closure::operator==(const Closure& other) const
     return true;
 }
 
-Closure::Closure(const RuleRegistry& rules, const SymbolRegistry& symbols)
-    : rules(rules), symbols(symbols)
+Closure::Closure()
 {}
 
 void Closure::Complete()
@@ -140,11 +149,15 @@ void Closure::Complete()
 
 void Closure::HandlePiece(RulePiece piece, std::queue<RulePiece>& ruleQueue, SymbolSet& used)
 {
+    const auto& rules = RegistryManager::Instance.rules;
+    const auto& symbols = RegistryManager::Instance.symbols;
+
     // Ignore any finished rules. These can't advance farther
     if (piece.AtEnd(rules))
         return;
 
     Symbol symbol = piece.Next(rules);
+
 
     // There are no productions of terminals by definition
     if (symbols.IsTerminal(symbol))

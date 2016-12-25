@@ -30,12 +30,9 @@ private:
 class Closure
 {
 private:
-    const RuleRegistry& rules;
-    const SymbolRegistry& symbols;
-
     std::vector<RulePiece> rulePieces;
 public:
-    static Closure CreateBeginning(const RuleRegistry& rules, const SymbolRegistry& symbols);
+    static Closure CreateBeginning();
 
     void GetAdvanceable(SymbolSet& symbolsOut) const;
 
@@ -47,7 +44,7 @@ public:
     bool operator==(const Closure& other) const;
 
 private:
-    Closure(const RuleRegistry& rules, const SymbolRegistry& symbols);
+    Closure();
 
     void Complete();
     void HandlePiece(RulePiece piece, std::queue<RulePiece>& ruleQueue, SymbolSet& used);
