@@ -1,9 +1,12 @@
 #pragma once
 
 #include <vector>
+#include <queue>
 
 #include "Rule.h"
 #include "SymbolRegistry.h"
+// TODO: move SymbolSet to its own file
+#include "Properties.h"
 
 struct RulePiece
 {
@@ -28,12 +31,13 @@ class Closure
 {
 private:
     const RuleRegistry& rules;
+    const SymbolRegistry& symbols;
 
     std::vector<RulePiece> rulePieces;
 public:
-    Closure(RulePiece rulePiece, const RuleRegistry& rules);
+    static Closure CreateBeginning(const RuleRegistry& rules, const SymbolRegistry& symbols);
 
-    void GetAdvanceable(SybmolSet& symbolsOut) const;
+    void GetAdvanceable(SymbolSet& symbolsOut) const;
 
     Closure Advance(Symbol s) const;
 
@@ -41,11 +45,10 @@ public:
     bool operator==(const Closure& other) const;
 
 private:
-    Closure(const RuleRegistry& rules);
+    Closure(const RuleRegistry& rules, const SymbolRegistry& symbols);
 
     void Complete();
-    void AddToQueue(RulePiece piece, std::queue<RuleId>& ruleQueue, const SymbolSet& used);
-    void HandleRule(RuleId rid, std::queue<RuleId>& ruleQueue, SymbolSet& used);
+    void HandlePiece(RulePiece piece, std::queue<RulePiece>& ruleQueue, SymbolSet& used);
 };
 
 using State = int;

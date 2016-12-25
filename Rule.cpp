@@ -68,7 +68,8 @@ RuleId RuleRegistry::GetOrRegister(const Rule& rule)
 
 RuleId RuleRegistry::CreatePseudoRule(const SymbolRegistry& symbols)
 {
-    return Register({ symbols.GetPseudoStartSymbol(), { symbols.GetStartSymbol() } });
+    pseudoRule = Register({ symbols.GetPseudoStartSymbol(), { symbols.GetStartSymbol() } });
+    return pseudoRule;
 }
 
 RuleId RuleRegistry::GetId(const Rule& rule) const

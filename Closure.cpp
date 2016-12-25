@@ -1,6 +1,7 @@
 #include "Closure.h"
 
 #include <cassert>
+#include <algorithm>
 
 bool RulePiece::AtEnd(const RuleRegistry& rules) const
 {
@@ -37,10 +38,13 @@ bool RulePiece::operator==(const RulePiece& other) const
     return rule == other.rule && position == other.position;
 }
 
-Closure::Closure(RulePiece rulePiece, const RuleRegistry& rules) : rules(rules)
+/*static*/ Closure Closure::CreateBeginning(const RuleRegistry& rules, const SymbolRegistry& symbols)
 {
-    rulePieces.push_back(rulePiece);
-    Complete();
+    Closure result(rules, symbols);
+    RuleId pseudoRule = rules.GetPseudoRule();
+    result.rulePieces.push_back({pseudoRule, 0});
+    result.Complete();
+    return result;
 }
 
 void Closure::GetAdvanceable(SymbolSet& symbolsOut) const
@@ -57,7 +61,7 @@ void Closure::GetAdvanceable(SymbolSet& symbolsOut) const
 
 Closure Closure::Advance(Symbol s) const
 {
-    Closure result(rules);
+    Closure result(rules, symbols);
 
     for (const RulePiece p : rulePieces)
     {
@@ -110,24 +114,59 @@ bool Closure::operator==(const Closure& other) const
     return true;
 }
 
-Closure::Closure(const RuleRegistry& rules) : rules(rules)
+Closure::Closure(const RuleRegistry& rules, const SymbolRegistry& symbols)
+    : rules(rules), symbols(symbols)
 {}
 
 void Closure::Complete()
 {
-    std::queue<RuleId> ruleQueue;
+    std::queue<RulePiece> ruleQueue;
     SymbolSet used;
 
     for (const RulePiece& piece : rulePieces)
     {
-        AddToQueue(piece, ruleQueue, used);
+        ruleQueue.push(piece);
     }
 
     while (ruleQueue.size() > 0)
     {
-        RuleId rid = ruleQueue.front();
+        RulePiece piece = ruleQueue.front();
         ruleQueue.pop();
-        HandleRUle(rid, ruleQueue, used);
+        HandlePiece(piece, ruleQueue, used);
+    }
+
+    std::sort(rulePieces.begin(), rulePieces.end());
+}
+
+void Closure::HandlePiece(RulePiece piece, std::queue<RulePiece>& ruleQueue, SymbolSet& used)
+{
+    // Ignore any finished rules. These can't advance farther
+    if (piece.AtEnd(rules))
+        return;
+
+    Symbol symbol = piece.Next(rules);
+
+    // There are no productions of terminals by definition
+    if (symbols.IsTerminal(symbol))
+        return;
+
+    // If already put all for this symbol in, ignore
+    if (used.count(symbol))
+        return;
+
+    used.insert(symbol); // Mark as used
+
+    // Extract the rules that produce this symbol
+    std::vector<RuleId> nextRules;
+    rules.GetRulesForHead(symbol, nextRules);
+
+    // Add the rules to the vector and queue
+    for (RuleId rid : nextRules)
+    {
+        RulePiece piece { rid, 0 };
+
+        rulePieces.push_back(piece);
+        ruleQueue.push(piece);
     }
 }
 
