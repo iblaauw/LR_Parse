@@ -11,7 +11,7 @@
 struct RulePiece
 {
     RuleId rule;
-    int position;
+    unsigned int position;
 
     bool AtEnd(const RuleRegistry& rules) const;
     Symbol Next(const RuleRegistry& rules) const;
@@ -40,6 +40,8 @@ public:
     void GetAdvanceable(SymbolSet& symbolsOut) const;
 
     Closure Advance(Symbol s) const;
+
+    inline const std::vector<RulePiece>& GetPieces() const { return rulePieces; }
 
     bool operator<(const Closure& other) const;
     bool operator==(const Closure& other) const;

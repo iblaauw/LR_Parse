@@ -28,7 +28,7 @@ bool RulePiece::operator<(const RulePiece& other) const
     if (rule > other.rule)
         return false;
 
-    if (position < other.rule)
+    if (position < other.position)
         return true;
     return false;
 }

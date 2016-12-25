@@ -5,6 +5,7 @@
 #include "Token.h"
 #include "Rule.h"
 #include "RuleProperties.h"
+#include "Closure.h"
 
 void SetupTokens(TokenRegistry& tokenRegistry)
 {
@@ -182,6 +183,40 @@ void PrintFollow(const SymbolRegistry& symbols, const RuleProperties& props)
     }
 }
 
+void PrintRulePiece(RulePiece piece, const SymbolRegistry& symbols, const RuleRegistry& rules)
+{
+    const Rule& rule = rules.GetRule(piece.rule);
+
+    std::cout << symbols.GetValue(rule.head) << " -> ";
+
+    for (unsigned int i = 0; i < rule.body.size(); i++)
+    {
+        if (i == piece.position)
+        {
+            std::cout << "* ";
+        }
+
+        Symbol s = rule.body[i];
+        std::cout << symbols.GetValue(s) << " ";
+    }
+
+    if (piece.position == rule.body.size())
+        std::cout << "*";
+
+    std::cout << std::endl;
+}
+
+void PrintClosure(const Closure& closure, const SymbolRegistry& symbols, const RuleRegistry& rules)
+{
+    std::cout << std::endl;
+
+    auto pieces = closure.GetPieces();
+    for (RulePiece p : pieces)
+    {
+        PrintRulePiece(p, symbols, rules);
+    }
+}
+
 int main()
 {
     std::ifstream infile("input.test");
@@ -211,6 +246,14 @@ int main()
     PrintNullable(symbolRegistry, properties);
     PrintFirst(symbolRegistry, properties);
     PrintFollow(symbolRegistry, properties);
+
+
+    Closure close = Closure::CreateBeginning(ruleRegistry, symbolRegistry);
+    PrintClosure(close, symbolRegistry, ruleRegistry);
+    Closure close2 = close.Advance(symbolRegistry.Get("Statement"));
+    PrintClosure(close2, symbolRegistry, ruleRegistry);
+    Closure close3 = close2.Advance(symbolRegistry.Get("Expression"));
+    PrintClosure(close3, symbolRegistry, ruleRegistry);
 
     return 0;
 }
