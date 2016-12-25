@@ -1,7 +1,8 @@
 #include "ClosureTree.h"
+#include "RegistryManager.h"
 
-ClosureTree::ClosureTree(ClosureRegistry& closures)
-    : closures(closures)
+ClosureTree::ClosureTree()
+    : closures(RegistryManager::Instance.closures)
 {}
 
 void ClosureTree::Build()

@@ -3,6 +3,7 @@
 #include "Token.h"
 #include "SymbolRegistry.h"
 #include "Rule.h"
+#include "Closure.h"
 
 
 class RegistryManager
@@ -13,7 +14,9 @@ public:
     TokenRegistry tokens;
     SymbolRegistry symbols;
     RuleRegistry rules;
+    ClosureRegistry closures;
 
 private:
     RegistryManager();
 };
+

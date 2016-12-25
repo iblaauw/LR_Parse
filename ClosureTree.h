@@ -19,7 +19,7 @@ private:
     std::map<State, StateNode> nodes;
     std::queue<State> stateQueue;
 public:
-    ClosureTree(ClosureRegistry& closures);
+    ClosureTree();
     void Build();
 
     inline const StateNode& GetNode(State state) const { return nodes.at(state); }

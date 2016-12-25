@@ -7,6 +7,7 @@
 #include "RuleProperties.h"
 #include "Closure.h"
 #include "RegistryManager.h"
+#include "ClosureTree.h"
 
 void SetupTokens(TokenRegistry& tokenRegistry)
 {
@@ -209,12 +210,27 @@ void PrintRulePiece(RulePiece piece, const SymbolRegistry& symbols, const RuleRe
 
 void PrintClosure(const Closure& closure, const SymbolRegistry& symbols, const RuleRegistry& rules)
 {
-    std::cout << std::endl;
-
     auto pieces = closure.GetPieces();
     for (RulePiece p : pieces)
     {
         PrintRulePiece(p, symbols, rules);
+    }
+    std::cout << std::endl;
+}
+
+void PrintAllClosures()
+{
+    const auto& symbols = RegistryManager::Instance.symbols;
+    const auto& rules = RegistryManager::Instance.rules;
+    const auto& closures = RegistryManager::Instance.closures;
+
+    std::cout << std::endl << "CLOSURES:" << std::endl;
+
+    for (State s : closures)
+    {
+        std::cout << "== " << s << " ==" << std::endl;
+        const Closure& c = closures.GetValue(s);
+        PrintClosure(c, symbols, rules);
     }
 }
 
@@ -248,13 +264,10 @@ int main()
     PrintFirst(symbolRegistry, properties);
     PrintFollow(symbolRegistry, properties);
 
+    ClosureTree closeTree;
+    closeTree.Build();
 
-    Closure close = Closure::CreateBeginning();
-    PrintClosure(close, symbolRegistry, ruleRegistry);
-    Closure close2 = close.Advance(symbolRegistry.Get("Statement"));
-    PrintClosure(close2, symbolRegistry, ruleRegistry);
-    Closure close3 = close2.Advance(symbolRegistry.Get("Expression"));
-    PrintClosure(close3, symbolRegistry, ruleRegistry);
+    PrintAllClosures();
 
     return 0;
 }
