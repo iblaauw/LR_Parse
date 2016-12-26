@@ -32,11 +32,11 @@ class Closure
 private:
     std::vector<RulePiece> rulePieces;
 public:
-    static Closure CreateBeginning();
+    static Closure CreateBeginning(const INullableProperty& nullable);
 
     void GetAdvanceable(SymbolSet& symbolsOut) const;
 
-    Closure Advance(Symbol s) const;
+    Closure Advance(Symbol s, const INullableProperty& nullable) const;
 
     inline const std::vector<RulePiece>& GetPieces() const { return rulePieces; }
 
@@ -46,8 +46,11 @@ public:
 private:
     Closure();
 
-    void Complete();
-    void HandlePiece(RulePiece piece, std::queue<RulePiece>& ruleQueue, SymbolSet& used);
+    void Complete(const INullableProperty& nullable);
+    void HandlePiece(RulePiece piece, std::queue<RulePiece>& ruleQueue, SymbolSet& used,
+            const INullableProperty& nullable);
+
+    void AddRule(RuleId rid, std::queue<RulePiece>& ruleQueue, const INullableProperty& nullable);
 };
 
 using State = int;

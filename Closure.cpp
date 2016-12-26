@@ -40,7 +40,7 @@ bool RulePiece::operator==(const RulePiece& other) const
     return rule == other.rule && position == other.position;
 }
 
-/*static*/ Closure Closure::CreateBeginning()
+/*static*/ Closure Closure::CreateBeginning(const INullableProperty& nullable)
 {
     Closure result;
 
@@ -48,7 +48,7 @@ bool RulePiece::operator==(const RulePiece& other) const
 
     RuleId pseudoRule = rules.GetPseudoRule();
     result.rulePieces.push_back({pseudoRule, 0});
-    result.Complete();
+    result.Complete(nullable);
     return result;
 }
 
@@ -67,7 +67,7 @@ void Closure::GetAdvanceable(SymbolSet& symbolsOut) const
     }
 }
 
-Closure Closure::Advance(Symbol s) const
+Closure Closure::Advance(Symbol s, const INullableProperty& nullable) const
 {
     Closure result;
 
@@ -81,7 +81,7 @@ Closure Closure::Advance(Symbol s) const
         }
     }
 
-    result.Complete();
+    result.Complete(nullable);
 
     return result;
 }
@@ -127,8 +127,10 @@ bool Closure::operator==(const Closure& other) const
 Closure::Closure()
 {}
 
-void Closure::Complete()
+void Closure::Complete(const INullableProperty& nullable)
 {
+    std::sort(rulePieces.begin(), rulePieces.end());
+
     std::queue<RulePiece> ruleQueue;
     SymbolSet used;
 
@@ -141,13 +143,14 @@ void Closure::Complete()
     {
         RulePiece piece = ruleQueue.front();
         ruleQueue.pop();
-        HandlePiece(piece, ruleQueue, used);
+        HandlePiece(piece, ruleQueue, used, nullable);
     }
 
-    std::sort(rulePieces.begin(), rulePieces.end());
+    //std::sort(rulePieces.begin(), rulePieces.end());
 }
 
-void Closure::HandlePiece(RulePiece piece, std::queue<RulePiece>& ruleQueue, SymbolSet& used)
+void Closure::HandlePiece(RulePiece piece, std::queue<RulePiece>& ruleQueue, SymbolSet& used,
+            const INullableProperty& nullable)
 {
     const auto& rules = RegistryManager::Instance.rules;
     const auto& symbols = RegistryManager::Instance.symbols;
@@ -157,7 +160,6 @@ void Closure::HandlePiece(RulePiece piece, std::queue<RulePiece>& ruleQueue, Sym
         return;
 
     Symbol symbol = piece.Next(rules);
-
 
     // There are no productions of terminals by definition
     if (symbols.IsTerminal(symbol))
@@ -176,11 +178,37 @@ void Closure::HandlePiece(RulePiece piece, std::queue<RulePiece>& ruleQueue, Sym
     // Add the rules to the vector and queue
     for (RuleId rid : nextRules)
     {
-        RulePiece piece { rid, 0 };
+        AddRule(rid, ruleQueue, nullable);
+    }
+}
+
+void Closure::AddRule(RuleId rid, std::queue<RulePiece>& ruleQueue, const INullableProperty& nullable)
+{
+    const auto& rules = RegistryManager::Instance.rules;
+    const Rule& rule = rules.GetRule(rid);
+    size_t size = rule.body.size();
+
+    // Iterate through every possible rule piece
+    for (unsigned int i = 0; i <= size; ++i)
+    {
+        RulePiece piece { rid, i };
+
+        if (std::binary_search(rulePieces.begin(), rulePieces.end(), piece))
+            continue;
 
         rulePieces.push_back(piece);
+        std::inplace_merge(rulePieces.begin(), rulePieces.end()-1, rulePieces.end());
         ruleQueue.push(piece);
+
+        if (i != size)
+        {
+            if (!nullable.IsNullable(rule.body[i]))
+            {
+                break;
+            }
+        }
     }
+
 }
 
 

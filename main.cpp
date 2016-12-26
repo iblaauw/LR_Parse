@@ -66,21 +66,21 @@ void SetupRules(RuleRegistry& ruleReg, const SymbolRegistry& symbols)
 
     std::vector<Rule> rules;
 
-    //rules.push_back({ symbols.Get("Program"), { symbols.Get("StatementBlock") } });
-    //rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("StatementBlock"), symbols.Get("Statement") } });
-    //rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("NULL") } });
-    //rules.push_back({ symbols.Get("Statement"), { symbols.Get("Expression"), symbols.Get(";") } });
-    //rules.push_back({ symbols.Get("Expression"), { symbols.Get("Expression"), symbols.Get("OPERATOR"), symbols.Get("Expression") } });
-    //rules.push_back({ symbols.Get("Expression"), { symbols.Get("NUMBER") } });
-    //rules.push_back({ symbols.Get("Expression"), { symbols.Get("IDENTIFIER") } });
-
     rules.push_back({ symbols.Get("Program"), { symbols.Get("StatementBlock") } });
-    rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("Statement"), symbols.Get("Expression") } });
-    rules.push_back({ symbols.Get("Statement"), { symbols.Get("Expression") } });
-    rules.push_back({ symbols.Get("Statement"), { symbols.Get("IDENTIFIER") } });
-    rules.push_back({ symbols.Get("Expression"), { symbols.Get("Statement") } });
-    rules.push_back({ symbols.Get("Expression"), { symbols.Get("OPERATOR") } });
-    rules.push_back({ symbols.Get("Expression"), { symbols.Get("NULL") } });
+    rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("StatementBlock"), symbols.Get("Statement") } });
+    rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("NULL") } });
+    rules.push_back({ symbols.Get("Statement"), { symbols.Get("Expression"), symbols.Get(";") } });
+    rules.push_back({ symbols.Get("Expression"), { symbols.Get("Expression"), symbols.Get("OPERATOR"), symbols.Get("Expression") } });
+    rules.push_back({ symbols.Get("Expression"), { symbols.Get("NUMBER") } });
+    rules.push_back({ symbols.Get("Expression"), { symbols.Get("IDENTIFIER") } });
+
+    //rules.push_back({ symbols.Get("Program"), { symbols.Get("StatementBlock") } });
+    //rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("Statement"), symbols.Get("Expression") } });
+    //rules.push_back({ symbols.Get("Statement"), { symbols.Get("Expression") } });
+    //rules.push_back({ symbols.Get("Statement"), { symbols.Get("IDENTIFIER") } });
+    //rules.push_back({ symbols.Get("Expression"), { symbols.Get("Statement") } });
+    //rules.push_back({ symbols.Get("Expression"), { symbols.Get("OPERATOR") } });
+    //rules.push_back({ symbols.Get("Expression"), { symbols.Get("NULL") } });
 
     ruleReg.CreatePseudoRule(symbols);
     for (Rule& r : rules)
@@ -264,7 +264,7 @@ int main()
     PrintFirst(symbolRegistry, properties);
     PrintFollow(symbolRegistry, properties);
 
-    ClosureTree closeTree;
+    ClosureTree closeTree(properties);
     closeTree.Build();
 
     PrintAllClosures();

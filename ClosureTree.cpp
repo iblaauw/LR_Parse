@@ -1,13 +1,13 @@
 #include "ClosureTree.h"
 #include "RegistryManager.h"
 
-ClosureTree::ClosureTree()
-    : closures(RegistryManager::Instance.closures)
+ClosureTree::ClosureTree(const INullableProperty& nullable)
+    : closures(RegistryManager::Instance.closures), nullable(nullable)
 {}
 
 void ClosureTree::Build()
 {
-    Closure start = Closure::CreateBeginning();
+    Closure start = Closure::CreateBeginning(nullable);
     State startState = closures.Register(start);
     stateQueue.push(startState);
 
@@ -40,7 +40,7 @@ void ClosureTree::HandleState(State state)
     for (Symbol s : advanceable)
     {
         // Get next state
-        State nextState = closures.GetOrRegister(closure.Advance(s));
+        State nextState = closures.GetOrRegister(closure.Advance(s, nullable));
 
         // Add to data
         node.children.emplace_back(nextState, s);
