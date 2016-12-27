@@ -30,6 +30,8 @@ public:
     inline const Action& Get(State state, Symbol input) const { return table[state][input]; }
 
 private:
+    void CheckSetValue(State state, Symbol symbol, ActionType type, int value, std::string name);
+
     void BuildShift(State state, State newstate, Symbol symbol);
     void BuildGoto(State state, State newstate, Symbol symbol);
     void BuildReduce(State state, RuleId ruleId, Symbol head, const IFollowProperty& follow);

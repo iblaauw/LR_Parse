@@ -59,25 +59,40 @@ void ActionTable::Build(const ClosureTree& tree, const IFollowProperty& follow, 
     }
 }
 
-void ActionTable::BuildShift(State state, State newstate, Symbol symbol)
+void ActionTable::CheckSetValue(State state, Symbol symbol, ActionType type, int value, std::string name)
 {
     Action& act = table[state][symbol];
     if (act.type != ActionType::ERROR)
-        throw TableException("A shift conflict occured while building the table.");
+    {
+        const auto& symbols = RegistryManager::Instance.symbols;
 
-    act.type = ActionType::SHIFT;
-    act.id = newstate;
+        std::string message = "A " + name + " conflict occured while building the table:\n";
+        message += "\tin table slot ";
+        message += std::to_string(state) + ", " + symbols.GetValue(symbol);
+        message += "\n\t";
+        message += std::to_string((int)type);
+        message += ", ";
+        message += std::to_string(value);
+        message += " -> ";
+        message += std::to_string((int)act.type);
+        message += ", ";
+        message += std::to_string(act.id);
+
+        throw TableException(message);
+    }
+
+    act.type = type;
+    act.id = value;
+}
+
+void ActionTable::BuildShift(State state, State newstate, Symbol symbol)
+{
+    CheckSetValue(state, symbol, ActionType::SHIFT, newstate, "shift");
 }
 
 void ActionTable::BuildGoto(State state, State newstate, Symbol symbol)
 {
-    Action& act = table[state][symbol];
-    if (act.type != ActionType::ERROR)
-        throw TableException("A goto conflict occured while building the table.");
-
-    act.type = ActionType::GOTO;
-    act.id = newstate;
-
+    CheckSetValue(state, symbol, ActionType::GOTO, newstate, "goto");
 }
 
 void ActionTable::BuildReduce(State state, RuleId ruleId, Symbol head,
@@ -85,12 +100,7 @@ void ActionTable::BuildReduce(State state, RuleId ruleId, Symbol head,
 {
     for (Symbol s : follow.GetFollow(head))
     {
-        Action& act = table[state][s];
-        if (act.type != ActionType::ERROR)
-            throw TableException("A reduce conflict occured while building the table.");
-
-        act.type = ActionType::REDUCE;
-        act.id = ruleId;
+        CheckSetValue(state, s, ActionType::REDUCE, ruleId, "reduce");
     }
 }
 

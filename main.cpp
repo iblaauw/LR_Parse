@@ -8,6 +8,7 @@
 #include "Closure.h"
 #include "RegistryManager.h"
 #include "ClosureTree.h"
+#include "ActionTable.h"
 
 void SetupTokens(TokenRegistry& tokenRegistry)
 {
@@ -46,12 +47,18 @@ void SetupLexer(Lexer& lex)
 
 void SetupSymbols(SymbolRegistry& symbols)
 {
-    Symbol start = symbols.Register("Program");
+    //Symbol start = symbols.Register("Program");
+    //symbols.SetStartSymbol(start);
+
+    //symbols.Register("StatementBlock");
+    //symbols.Register("Statement");
+    //symbols.Register("Expression");
+
+    Symbol start = symbols.Register("E");
     symbols.SetStartSymbol(start);
 
-    symbols.Register("StatementBlock");
-    symbols.Register("Statement");
-    symbols.Register("Expression");
+    symbols.Register("T");
+    symbols.Register("F");
 }
 
 void SetupRules(RuleRegistry& ruleReg, const SymbolRegistry& symbols)
@@ -66,13 +73,13 @@ void SetupRules(RuleRegistry& ruleReg, const SymbolRegistry& symbols)
 
     std::vector<Rule> rules;
 
-    rules.push_back({ symbols.Get("Program"), { symbols.Get("StatementBlock") } });
-    rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("StatementBlock"), symbols.Get("Statement") } });
-    rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("NULL") } });
-    rules.push_back({ symbols.Get("Statement"), { symbols.Get("Expression"), symbols.Get(";") } });
-    rules.push_back({ symbols.Get("Expression"), { symbols.Get("Expression"), symbols.Get("OPERATOR"), symbols.Get("Expression") } });
-    rules.push_back({ symbols.Get("Expression"), { symbols.Get("NUMBER") } });
-    rules.push_back({ symbols.Get("Expression"), { symbols.Get("IDENTIFIER") } });
+    //rules.push_back({ symbols.Get("Program"), { symbols.Get("StatementBlock") } });
+    //rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("StatementBlock"), symbols.Get("Statement") } });
+    //rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("NULL") } });
+    //rules.push_back({ symbols.Get("Statement"), { symbols.Get("Expression"), symbols.Get(";") } });
+    //rules.push_back({ symbols.Get("Expression"), { symbols.Get("Expression"), symbols.Get("OPERATOR"), symbols.Get("Expression") } });
+    //rules.push_back({ symbols.Get("Expression"), { symbols.Get("NUMBER") } });
+    //rules.push_back({ symbols.Get("Expression"), { symbols.Get("IDENTIFIER") } });
 
     //rules.push_back({ symbols.Get("Program"), { symbols.Get("StatementBlock") } });
     //rules.push_back({ symbols.Get("StatementBlock"), { symbols.Get("Statement"), symbols.Get("Expression") } });
@@ -81,6 +88,20 @@ void SetupRules(RuleRegistry& ruleReg, const SymbolRegistry& symbols)
     //rules.push_back({ symbols.Get("Expression"), { symbols.Get("Statement") } });
     //rules.push_back({ symbols.Get("Expression"), { symbols.Get("OPERATOR") } });
     //rules.push_back({ symbols.Get("Expression"), { symbols.Get("NULL") } });
+
+    Symbol E = symbols.Get("E");
+    Symbol F = symbols.Get("F");
+    Symbol T = symbols.Get("T");
+    Symbol OP = symbols.Get("OPERATOR");
+    Symbol INT = symbols.Get("int");
+
+    rules.push_back({ E, { E, OP, T }});
+    rules.push_back({ E, { T }});
+    rules.push_back({ T, { T, INT, F } });
+    rules.push_back({ T, { F } });
+    rules.push_back({ F, { symbols.Get("("), E, symbols.Get(")") } });
+    rules.push_back({ F, { symbols.Get("IDENTIFIER") } });
+    rules.push_back({ F, { symbols.Get("NUMBER") } });
 
     ruleReg.CreatePseudoRule(symbols);
     for (Rule& r : rules)
@@ -234,6 +255,54 @@ void PrintAllClosures()
     }
 }
 
+void PrintTableAction(const ActionTable& actTable, State state, Symbol symbol)
+{
+    const auto& action = actTable.Get(state, symbol);
+    switch (action.type)
+    {
+    case ActionTable::ActionType::ERROR:
+        std::cout << "__";
+        break;
+    case ActionTable::ActionType::SHIFT:
+        std::cout << "s" << action.id;
+        break;
+    case ActionTable::ActionType::REDUCE:
+        std::cout << "r" << action.id;
+        break;
+    case ActionTable::ActionType::GOTO:
+        std::cout << "g" << action.id;
+        break;
+    case ActionTable::ActionType::ACCEPT:
+        std::cout << "**";
+        break;
+    }
+}
+
+void PrintTable(const ActionTable& actTable)
+{
+    const auto& symbols = RegistryManager::Instance.symbols;
+    const auto& closures = RegistryManager::Instance.closures;
+
+    // Print the header:
+    std::cout << "    ";
+    for (Symbol i = 0; i < symbols.size(); ++i)
+    {
+        std::cout << symbols.GetValue(i) << "  ";
+    }
+    std::cout << std::endl;
+
+    for (State i = 0; i < closures.size(); ++i)
+    {
+        std::cout << i << ":  ";
+        for (Symbol j = 0; j < symbols.size(); ++j)
+        {
+            PrintTableAction(actTable, i, j);
+            std::cout << "  ";
+        }
+        std::cout << std::endl;
+    }
+}
+
 int main()
 {
     std::ifstream infile("input.test");
@@ -268,6 +337,11 @@ int main()
     closeTree.Build();
 
     PrintAllClosures();
+
+    ActionTable actTable;
+    actTable.Build(closeTree, properties, symbolRegistry.Get("EOF"));
+
+    PrintTable(actTable);
 
     return 0;
 }
