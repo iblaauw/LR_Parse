@@ -9,6 +9,7 @@
 #include "RegistryManager.h"
 #include "ClosureTree.h"
 #include "ActionTable.h"
+#include "Parser.h"
 
 void SetupTokens(TokenRegistry& tokenRegistry)
 {
@@ -329,9 +330,9 @@ int main()
     RuleProperties properties(ruleRegistry, symbolRegistry);
     properties.Compute();
 
-    PrintNullable(symbolRegistry, properties);
-    PrintFirst(symbolRegistry, properties);
-    PrintFollow(symbolRegistry, properties);
+    //PrintNullable(symbolRegistry, properties);
+    //PrintFirst(symbolRegistry, properties);
+    //PrintFollow(symbolRegistry, properties);
 
     ClosureTree closeTree(properties);
     closeTree.Build();
@@ -342,6 +343,9 @@ int main()
     actTable.Build(closeTree, properties, symbolRegistry.Get("EOF"));
 
     PrintTable(actTable);
+
+    Parser parser(lexer, actTable);
+    parser.Parse();
 
     return 0;
 }
