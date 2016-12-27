@@ -51,6 +51,12 @@ private:
             const INullableProperty& nullable);
 
     void AddRule(RuleId rid, std::queue<RulePiece>& ruleQueue, const INullableProperty& nullable);
+
+    void GetPiecePortions(RulePiece piece, const INullableProperty& nullable, std::vector<RulePiece>& piecesOut);
+
+    void AddAll(const std::vector<RulePiece>& pieces, const INullableProperty& nullable);
+    void DoAddPiece(RulePiece piece);
+
 };
 
 using State = int;

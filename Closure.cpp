@@ -47,7 +47,8 @@ bool RulePiece::operator==(const RulePiece& other) const
     const auto& rules = RegistryManager::Instance.rules;
 
     RuleId pseudoRule = rules.GetPseudoRule();
-    result.rulePieces.push_back({pseudoRule, 0});
+    std::vector<RulePiece> pieces = { { pseudoRule, 0 } };
+    result.AddAll(pieces, nullable);
     result.Complete(nullable);
     return result;
 }
@@ -73,13 +74,18 @@ Closure Closure::Advance(Symbol s, const INullableProperty& nullable) const
 
     const auto& rules = RegistryManager::Instance.rules;
 
+    std::vector<RulePiece> advancePieces;
+
     for (const RulePiece p : rulePieces)
     {
         if (!p.AtEnd(rules) && p.Next(rules) == s)
         {
-            result.rulePieces.push_back(p.Advance());
+            //result.rulePieces.push_back(p.Advance());
+            advancePieces.push_back(p.Advance());
         }
     }
+
+    result.AddAll(advancePieces, nullable);
 
     result.Complete(nullable);
 
@@ -175,30 +181,46 @@ void Closure::HandlePiece(RulePiece piece, std::queue<RulePiece>& ruleQueue, Sym
     std::vector<RuleId> nextRules;
     rules.GetRulesForHead(symbol, nextRules);
 
-    // Add the rules to the vector and queue
+    // Add this rule
     for (RuleId rid : nextRules)
     {
         AddRule(rid, ruleQueue, nullable);
     }
 }
 
+// Adds the rule: takes the rule, gets all portions
 void Closure::AddRule(RuleId rid, std::queue<RulePiece>& ruleQueue, const INullableProperty& nullable)
 {
+    std::vector<RulePiece> allPieces;
+    RulePiece startPiece { rid, 0 };
+
+    GetPiecePortions(startPiece, nullable, allPieces);
+
+    for (RulePiece piece : allPieces)
+    {
+        DoAddPiece(piece);
+        ruleQueue.push(piece);
+    }
+}
+
+void Closure::GetPiecePortions(RulePiece piece, const INullableProperty& nullable, std::vector<RulePiece>& piecesOut)
+{
+    piecesOut.clear();
+
     const auto& rules = RegistryManager::Instance.rules;
-    const Rule& rule = rules.GetRule(rid);
+    const Rule& rule = rules.GetRule(piece.rule);
     size_t size = rule.body.size();
 
     // Iterate through every possible rule piece
-    for (unsigned int i = 0; i <= size; ++i)
+    for (unsigned int i = piece.position; i <= size; ++i)
     {
-        RulePiece piece { rid, i };
+        RulePiece newpiece { piece.rule, i };
 
-        if (std::binary_search(rulePieces.begin(), rulePieces.end(), piece))
-            continue;
-
-        rulePieces.push_back(piece);
-        std::inplace_merge(rulePieces.begin(), rulePieces.end()-1, rulePieces.end());
-        ruleQueue.push(piece);
+        // Only add the piece if we don't already have it
+        if (!std::binary_search(rulePieces.begin(), rulePieces.end(), newpiece))
+        {
+            piecesOut.push_back(newpiece);
+        }
 
         if (i != size)
         {
@@ -208,7 +230,29 @@ void Closure::AddRule(RuleId rid, std::queue<RulePiece>& ruleQueue, const INulla
             }
         }
     }
+}
 
+void Closure::AddAll(const std::vector<RulePiece>& pieces, const INullableProperty& nullable)
+{
+    std::vector<RulePiece> portions;
+    for (RulePiece p : pieces)
+    {
+        GetPiecePortions(p, nullable, portions);
+        for (RulePiece p2 : portions)
+        {
+            DoAddPiece(p2);
+        }
+        portions.clear();
+    }
+}
+
+void Closure::DoAddPiece(RulePiece piece)
+{
+    rulePieces.push_back(piece);
+    if (rulePieces.size() > 1)
+    {
+        std::inplace_merge(rulePieces.begin(), rulePieces.end()-1, rulePieces.end());
+    }
 }
 
 
