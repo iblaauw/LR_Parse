@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <algorithm>
 
 #include "RegistryManager.h"
 #include "message_exception.h"
@@ -60,6 +61,7 @@ void Parser::DoAction(ActionTable::Action action)
 
 void Parser::DoShift(State state)
 {
+    OnShift(current);
     items.push_back({state, current});
     Advance();
 }
@@ -72,7 +74,7 @@ void Parser::DoReduce(RuleId rid)
 
     // TODO: combine what we're popping
     std::vector<Symbol> prev;
-    for (int i = rule.body.size(); i >= 0; --i)
+    for (int i = rule.body.size() - 1; i >= 0; --i)
     {
         Symbol prevSymbol = items.back().symbol;
         assert(prevSymbol == rule.body[i]);
@@ -80,6 +82,7 @@ void Parser::DoReduce(RuleId rid)
         items.pop_back();
     }
 
+    std::reverse(prev.begin(), prev.end());
     OnReduce(rule.head, prev);
 
     DoGoto(rule.head);
@@ -104,10 +107,16 @@ void Parser::Advance()
     current = RegistryManager::Instance.symbols.Get(str);
 }
 
+void Parser::OnShift(Symbol symbol)
+{
+    const auto& symbols = RegistryManager::Instance.symbols;
+    std::cout << "Shift: " << symbols.GetValue(symbol) << std::endl;
+}
+
 void Parser::OnReduce(Symbol head, const std::vector<Symbol>& body)
 {
     const auto& symbols = RegistryManager::Instance.symbols;
-    std::cout << "Produce: ";
+    std::cout << "Reduce: ";
     for (Symbol s : body)
     {
         std::cout << symbols.GetValue(s) << " ";

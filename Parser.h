@@ -35,5 +35,6 @@ private:
     void Advance();
 
     void OnReduce(Symbol head, const std::vector<Symbol>& body);
+    void OnShift(Symbol symbol);
 };
 

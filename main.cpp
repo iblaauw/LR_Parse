@@ -321,7 +321,7 @@ int main()
     SetupSymbols(symbolRegistry);
     SetupRules(ruleRegistry, symbolRegistry);
 
-    PrintLexerAll(lexer, tokenRegistry);
+    //PrintLexerAll(lexer, tokenRegistry);
 
     PrintSymbols(symbolRegistry);
 
@@ -343,6 +343,8 @@ int main()
     actTable.Build(closeTree, properties, symbolRegistry.Get("EOF"));
 
     PrintTable(actTable);
+
+    std::cout << std::endl;
 
     Parser parser(lexer, actTable);
     parser.Parse();
