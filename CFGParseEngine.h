@@ -36,6 +36,7 @@ private:
     JoinNode* current;
     bool testing;
     bool testResult;
+
 public:
     using Callable = void (*)(ParseContext*);
     using Filter = bool (*)(char);
@@ -52,8 +53,15 @@ public:
 
     bool Is(Filter charset);
 
+    void SetName(std::string name);
+
 private:
     void Simulate(Callable func);
     void Simulate(Filter charset);
 };
+
+#define AutoName() SetName( __FUNCTION__ )
+
+
+
 

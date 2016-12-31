@@ -72,8 +72,10 @@ void ParseContext::Do(Callable func)
     }
     else
     {
-        // Create a new node to represent this action
+        // Save prev state
         JoinNode* node = current;
+
+        // Create a new node to represent this action
         JoinNode* newNode = new JoinNode();
         node->children.push_back(newNode);
 
@@ -146,6 +148,14 @@ bool ParseContext::Is(Filter charset)
     bool result = charset(c);
     lookahead.Rollback(pos); // restore state
     return result;
+}
+
+void ParseContext::SetName(std::string name)
+{
+    if (!testing)
+    {
+        current->name = name;
+    }
 }
 
 void ParseContext::Simulate(Callable func)

@@ -5,6 +5,30 @@
 #include "message_exception.h"
 #include "CFGParseEngine.h"
 
+/****** Print functions for nodes ******/
+
+std::ostream& JoinNode::PrintTo(std::ostream& out) const
+{
+    out << "[";
+    out << name;
+
+    for (CFGNode* child : children)
+    {
+        out << " ";
+        out << *child;
+    }
+
+    out << " ]";
+
+    return out;
+}
+
+std::ostream& CharNode::PrintTo(std::ostream& out) const
+{
+    out << '\'' << value << '\'';
+    return out;
+}
+
 /// The CFG for parsing the input CFG:
 /*  Start state = CFG
     CFG : ProgramList
@@ -70,6 +94,7 @@
     charset LiteralChar except QUOTE : CHAR
 */
 
+
 template <char C>
 bool DoLiteral(char c) { return c == C; }
 
@@ -89,7 +114,7 @@ bool WhitespaceChar(char c) { return c == ' ' || c == '\t'; }
 
 void Whitespace(ParseContext* context)
 {
-    std::cout << "Whitespace" << std::endl;
+    context->AutoName();
 
     context->Do(WhitespaceChar);
     if (context->Is(Whitespace))
@@ -100,7 +125,7 @@ void Whitespace(ParseContext* context)
 
 void OptWhitespace(ParseContext* context)
 {
-    std::cout << "OptWhitespace" << std::endl;
+    context->AutoName();
 
     if (context->Is(Whitespace))
     {
@@ -110,7 +135,7 @@ void OptWhitespace(ParseContext* context)
 
 void Identifier(ParseContext* context)
 {
-    std::cout << "Identifier" << std::endl;
+    context->AutoName();
 
     context->Do(IdentifierChar);
     if (context->Is(Identifier))
@@ -133,7 +158,7 @@ void StatementSequence(ParseContext* context);
 
 void StatementSequenceEnd(ParseContext* context)
 {
-    std::cout << "Statement Seq End" << std::endl;
+    context->AutoName();
 
     context->Do(Whitespace);
     context->Do(StatementSequence);
@@ -141,7 +166,7 @@ void StatementSequenceEnd(ParseContext* context)
 
 void StatementSequence(ParseContext* context)
 {
-    std::cout << "Statement Seq" << std::endl;
+    context->AutoName();
 
     context->Do(Identifier);
     if (context->Is(StatementSequenceEnd))
@@ -152,7 +177,8 @@ void StatementSequence(ParseContext* context)
 
 void Statement(ParseContext* context)
 {
-    std::cout << "Statement" << std::endl;
+    context->AutoName();
+
     context->Do(OptWhitespace);
     context->Do(StatementSequence);
     context->Do(OptWhitespace);
@@ -165,7 +191,9 @@ CFGParser::CFGParser(std::istream& input) : input(input)
 void CFGParser::Parse()
 {
     ParseContext context(input);
-    context.Start(Statement);
+    auto* result = context.Start(Statement);
+
+    std::cout << *result << std::endl;
 }
 
 
