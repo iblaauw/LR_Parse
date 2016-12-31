@@ -10,6 +10,7 @@
 #include "ClosureTree.h"
 #include "ActionTable.h"
 #include "Parser.h"
+#include "CFGParser.h"
 
 void SetupTokens(TokenRegistry& tokenRegistry)
 {
@@ -306,6 +307,12 @@ void PrintTable(const ActionTable& actTable)
 
 int main()
 {
+    std::ifstream infile2("cfg.test");
+    CFGParser parser2(infile2);
+    parser2.Parse();
+
+    return 0;
+
     std::ifstream infile("input.test");
 
     TokenRegistry& tokenRegistry = RegistryManager::Instance.tokens;

@@ -2,14 +2,15 @@
 
 #include <deque>
 #include <iostream>
+#include <string>
 
 #include "CFGParser.h"
 
-struct CFGResult
-{
-    bool isTest;
-    bool testResult;
-};
+//struct CFGResult
+//{
+//    bool isTest;
+//    bool testResult;
+//};
 
 class ParseLookahead
 {
@@ -24,7 +25,8 @@ public:
     char GetNext();
     char Consume();
 
-    void Rollback();
+    inline int GetPosition() const { return lookPos; }
+    void Rollback(int val);
 };
 
 class ParseContext
@@ -33,22 +35,26 @@ private:
     ParseLookahead lookahead;
     JoinNode* current;
     bool testing;
+    bool testResult;
 public:
-    using Callable = CFGResult (*)(ParseContext*);
+    using Callable = void (*)(ParseContext*);
     using Filter = bool (*)(char);
 
     ParseContext(std::istream& input);
 
-    inline CFGNode* GetCurrent() const { return current; }
+    CFGNode* Start(Callable func);
 
-    void Start(Callable func);
-
-    CFGResult Do(Callable func);
+    void Do(Callable func);
 
     bool Is(Callable func);
 
-    CFGResult Do(Filter charset);
+    void Do(Filter charset);
 
     bool Is(Filter charset);
+
+private:
+    void Simulate(Callable func);
+
+    void Simulate(Filter charset);
 };
 

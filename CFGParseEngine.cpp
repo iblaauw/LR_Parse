@@ -33,35 +33,43 @@ char ParseLookahead::Consume()
     return c;
 }
 
-void ParseLookahead::Rollback()
+void ParseLookahead::Rollback(int val)
 {
-    assert(lookPos > 0);
-    lookPos--;
+    assert(lookPos > val);
+    assert(val >= 0);
+    assert(val < lookahead.size());
+    lookPos = val;
 }
 
 ParseContext::ParseContext(std::istream& input)
     : lookahead(input), current(nullptr), testing(false)
 {}
 
-void ParseContext::Start(Callable func)
+CFGNode* ParseContext::Start(Callable func)
 {
     JoinNode* node = new JoinNode();
 
     current = node;
     testing = false;
+    testResult = true;
 
-    CFGResult result = func(this);
+    func(this);
 
-    assert(!result.isTest);
+    assert(!testing);
     assert(current == node);
+
+    return current;
 }
 
-CFGResult ParseContext::Do(Callable func)
+void ParseContext::Do(Callable func)
 {
+    std::cout << "DO " << testing << std::endl;
     if (testing)
     {
-        bool result = Is(func);
-        return CFGResult { true, result };
+        if (testResult) // Don't recurse if test failed already
+        {
+            testResult = Is(func);
+        }
     }
     else
     {
@@ -74,54 +82,70 @@ CFGResult ParseContext::Do(Callable func)
         current = newNode;
 
         // Call the function
-        CFGResult result = func(this);
-        assert(!result.isTest);
+        func(this);
+        assert(!testing);
         assert(current == newNode);
 
         // Restore back to previous state
         current = node;
-        return CFGResult { false, false };
     }
 }
 
 bool ParseContext::Is(Callable func)
 {
+    std::cout << "IS " << testing << std::endl;
+    // Save previous state
     bool prev = testing;
+    bool prevResult = testResult;
+
     testing = true;
+    testResult = true;
 
-    CFGResult result = func(this);
-    assert(result.isTest);
+    func(this);
 
+    assert(testing);
+
+    bool result = testResult;
+
+    // Restore previous state
     testing = prev;
+    testResult = prevResult;
 
-    return result.testResult;
+    return result;
 }
 
-CFGResult ParseContext::Do(Filter charset)
+void ParseContext::Do(Filter charset)
 {
+    std::cout << "DO2 " << testing << std::endl;
     if (testing)
     {
-        bool result = Is(charset);
-        return CFGResult { true, result };
+        if (testResult)
+        {
+            char c = lookahead.GetNext();
+            testResult = Is(charset);
+        }
     }
+    else
+    {
+        char c = lookahead.Consume();
+        if (!charset(c))
+            throw CFGException("Invalid syntax!");
 
-    char c = lookahead.Consume();
-    if (!charset(c))
-        throw CFGException("Invalid syntax!");
+        CharNode* node = new CharNode();
+        node->value = c;
 
-    CharNode* node = new CharNode();
-    node->value = c;
-
-    current->children.push_back(node);
-
-    return CFGResult { false, false };
+        current->children.push_back(node);
+    }
 }
 
 bool ParseContext::Is(Filter charset)
 {
+    std::cout << "IS2 " << testing << std::endl;
     char c = lookahead.GetNext();
     bool result = charset(c);
     lookahead.Rollback(); // restore state
     return result;
 }
+
+
 
