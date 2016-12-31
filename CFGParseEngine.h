@@ -29,6 +29,8 @@ public:
     void Rollback(unsigned int val);
 };
 
+class ParseAST { };
+
 class ParseContext
 {
 private:
@@ -36,6 +38,9 @@ private:
     JoinNode* current;
     bool testing;
     bool testResult;
+    //bool customResult;
+
+    //vector<CFGNode*> resultNodes;
 
 public:
     using Callable = void (*)(ParseContext*);
@@ -45,17 +50,20 @@ public:
 
     CFGNode* Start(Callable func);
 
-    void Do(Callable func);
+    void Do(Callable func, bool discard = false);
 
     bool Is(Callable func);
 
-    void Do(Filter charset);
+    void Do(Filter charset, bool discard = false);
 
     bool Is(Filter charset);
 
     void SetName(std::string name);
 
+    inline bool IsCommitting() { return !testing; }
+
 private:
+
     void Simulate(Callable func);
     void Simulate(Filter charset);
 };

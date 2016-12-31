@@ -61,7 +61,7 @@ CFGNode* ParseContext::Start(Callable func)
     return current;
 }
 
-void ParseContext::Do(Callable func)
+void ParseContext::Do(Callable func, bool discard)
 {
     if (testing)
     {
@@ -77,7 +77,11 @@ void ParseContext::Do(Callable func)
 
         // Create a new node to represent this action
         JoinNode* newNode = new JoinNode();
-        node->children.push_back(newNode);
+        if (!discard)
+        {
+            // TODO: discarding leaks memory...
+            node->children.push_back(newNode);
+        }
 
         // Set new state
         current = newNode;
@@ -119,7 +123,7 @@ bool ParseContext::Is(Callable func)
     return result;
 }
 
-void ParseContext::Do(Filter charset)
+void ParseContext::Do(Filter charset, bool discard)
 {
     if (testing)
     {
@@ -134,10 +138,13 @@ void ParseContext::Do(Filter charset)
         if (!charset(c))
             throw CFGException("Invalid syntax!");
 
-        CharNode* node = new CharNode();
-        node->value = c;
+        if (!discard)
+        {
+            CharNode* node = new CharNode();
+            node->value = c;
 
-        current->children.push_back(node);
+            current->children.push_back(node);
+        }
     }
 }
 

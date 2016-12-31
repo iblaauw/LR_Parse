@@ -160,7 +160,7 @@ void StatementSequenceEnd(ParseContext* context)
 {
     context->AutoName();
 
-    context->Do(Whitespace);
+    context->Do(Whitespace, true);
     context->Do(StatementSequence);
 }
 
@@ -179,9 +179,9 @@ void Statement(ParseContext* context)
 {
     context->AutoName();
 
-    context->Do(OptWhitespace);
+    context->Do(OptWhitespace, true);
     context->Do(StatementSequence);
-    context->Do(OptWhitespace);
+    context->Do(OptWhitespace, true);
     context->Do(DoLiteral<';'>);
 }
 
