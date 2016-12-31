@@ -13,7 +13,7 @@ std::ostream& JoinNode::PrintTo(std::ostream& out) const
     out << "[";
     out << name;
 
-    for (CFGNode* child : children)
+    for (const NodePtr& child : children)
     {
         out << " ";
         out << *child;
@@ -146,18 +146,18 @@ void Identifier(ParseContext* context)
 
     if (context->IsCommitting())
     {
-        CharNode* cnode = static_cast<CharNode*>(context->Get(0));
+        std::unique_ptr<CharNode> cnode = context->AcquireAs<CharNode>(0);
         if (context->Size() == 1)
         {
-            IdentifierNode* node = new IdentifierNode();
+            auto node = utils::make_unique<IdentifierNode>();
             node->value += cnode->value;
-            context->Commit(node);
+            context->Commit(std::move(node));
         }
         else
         {
-            IdentifierNode* node = static_cast<IdentifierNode*>(context->Get(1));
+            auto node = context->AcquireAs<IdentifierNode>(1);
             node->value = cnode->value + node->value;
-            context->Commit(node);
+            context->Commit(std::move(node));
         }
     }
 

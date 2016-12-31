@@ -1,6 +1,7 @@
 #include "CFGParseEngine.h"
 
 #include <cassert>
+#include <memory>
 
 #include "message_exception.h"
 
@@ -64,7 +65,7 @@ CFGNode* ParseContext::Start(Callable func)
     Do(func, false);
     assert(!testing);
     assert(resultNodes.size() == 1);
-    return resultNodes[0];
+    return resultNodes[0].get();
 }
 
 void ParseContext::Do(Callable func, bool discard)
@@ -115,13 +116,19 @@ void ParseContext::Do(Callable func, bool discard)
             {
                 // Grab the custom result (stored as the only element in context's results)
                 assert(context.resultNodes.size() == 1);
-                resultNodes.push_back(context.resultNodes[0]);
+                resultNodes.push_back(std::move(context.resultNodes[0]));
             }
             else
             {
                 // Create the default new node: a join node
-                JoinNode* newNode = context.EmitJoin();
-                resultNodes.push_back(newNode);
+                std::unique_ptr<JoinNode> newNode = utils::make_unique<JoinNode>();
+                for (NodePtr& ptr : context.resultNodes)
+                {
+                    newNode->children.push_back(std::move(ptr));
+                }
+
+                //auto newNode = context.EmitJoin();
+                resultNodes.push_back(std::move(newNode));
             }
         }
 
@@ -134,25 +141,22 @@ bool ParseContext::Is(Callable func)
         return false;
 
     // Save previous state
-    bool prev = testing;
-    bool prevResult = testResult;
     unsigned int pos = lookahead->GetPosition();
 
-    testResult = true;
-    testing = true;
+    // Clone context
+    ParseContext context(*this);
 
-    func(this);
+    context.testResult = true;
+    context.testing = true;
 
-    assert(testing);
+    func(&context);
 
-    bool result = testResult;
+    assert(context.testing);
 
     // Restore previous state
-    testing = prev;
-    testResult = prevResult;
     lookahead->Rollback(pos);
 
-    return result;
+    return context.testResult;
 }
 
 void ParseContext::Do(Filter charset, bool discard)
@@ -172,11 +176,11 @@ void ParseContext::Do(Filter charset, bool discard)
 
         if (!discard)
         {
-            CharNode* node = new CharNode();
+            std::unique_ptr<CharNode> node = utils::make_unique<CharNode>();
             node->value = c;
 
             //current->children.push_back(node);
-            resultNodes.push_back(node);
+            resultNodes.push_back(std::move(node));
         }
     }
 }
@@ -195,7 +199,7 @@ ParseContext::ParseContext(const ParseContext& other)
       customResult(false), resultName(), resultNodes()
 { }
 
-void ParseContext::Commit(CFGNode* node)
+void ParseContext::Commit(NodePtr&& node)
 {
     assert(!testing);
 
@@ -203,7 +207,7 @@ void ParseContext::Commit(CFGNode* node)
         throw CFGException("Can only commit once!");
 
     resultNodes.clear();
-    resultNodes.push_back(node);
+    resultNodes.push_back(std::forward<NodePtr>(node));
     customResult = true;
 }
 
@@ -223,14 +227,5 @@ void ParseContext::Simulate(Filter charset)
         testResult = false;
     }
 }
-
-JoinNode* ParseContext::EmitJoin()
-{
-    JoinNode* node = new JoinNode();
-    node->name = resultName;
-    node->children = resultNodes;
-    return node;
-}
-
 
 

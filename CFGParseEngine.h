@@ -6,12 +6,6 @@
 
 #include "CFGParser.h"
 
-//struct CFGResult
-//{
-//    bool isTest;
-//    bool testResult;
-//};
-
 class ParseLookahead
 {
 private:
@@ -31,6 +25,10 @@ public:
 
 class ParseContext
 {
+public:
+    using Callable = void (*)(ParseContext*);
+    using Filter = bool (*)(char);
+
 private:
     ParseLookahead* lookahead;
     //JoinNode* current;
@@ -40,12 +38,9 @@ private:
 
     std::string resultName;
 
-    std::vector<CFGNode*> resultNodes;
+    std::vector<NodePtr> resultNodes;
 
 public:
-    using Callable = void (*)(ParseContext*);
-    using Filter = bool (*)(char);
-
     ParseContext(std::istream& input);
     ParseContext(const ParseContext& other);
 
@@ -63,17 +58,21 @@ public:
     inline std::string GetName() const { return resultName; }
 
     inline bool IsCommitting() { return !testing; }
-    inline CFGNode* Get(int i) const { return resultNodes.at(i); }
+    inline NodePtr& Get(int i) { return resultNodes.at(i); }
     inline size_t Size() const { return resultNodes.size(); }
 
-    void Commit(CFGNode* node);
+    template <class T>
+    std::unique_ptr<T> AcquireAs(int i)
+    {
+        return utils::acquire_as<T, CFGNode>(std::move(resultNodes.at(i)));
+    }
+
+    void Commit(NodePtr&& node);
 
 private:
 
     void Simulate(Callable func);
     void Simulate(Filter charset);
-
-    JoinNode* EmitJoin();
 };
 
 #define AutoName() SetName( __FUNCTION__ )
