@@ -29,24 +29,25 @@ public:
     void Rollback(unsigned int val);
 };
 
-class ParseAST { };
-
 class ParseContext
 {
 private:
-    ParseLookahead lookahead;
-    JoinNode* current;
+    ParseLookahead* lookahead;
+    //JoinNode* current;
     bool testing;
     bool testResult;
-    //bool customResult;
+    bool customResult;
 
-    //vector<CFGNode*> resultNodes;
+    std::string resultName;
+
+    std::vector<CFGNode*> resultNodes;
 
 public:
     using Callable = void (*)(ParseContext*);
     using Filter = bool (*)(char);
 
     ParseContext(std::istream& input);
+    ParseContext(const ParseContext& other);
 
     CFGNode* Start(Callable func);
 
@@ -58,14 +59,21 @@ public:
 
     bool Is(Filter charset);
 
-    void SetName(std::string name);
+    inline void SetName(std::string name) { resultName = name; }
+    inline std::string GetName() const { return resultName; }
 
     inline bool IsCommitting() { return !testing; }
+    inline CFGNode* Get(int i) const { return resultNodes.at(i); }
+    inline size_t Size() const { return resultNodes.size(); }
+
+    void Commit(CFGNode* node);
 
 private:
 
     void Simulate(Callable func);
     void Simulate(Filter charset);
+
+    JoinNode* EmitJoin();
 };
 
 #define AutoName() SetName( __FUNCTION__ )

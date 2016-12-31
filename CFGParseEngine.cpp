@@ -42,11 +42,12 @@ void ParseLookahead::Rollback(unsigned int val)
 }
 
 ParseContext::ParseContext(std::istream& input)
-    : lookahead(input), current(nullptr), testing(false)
+    : lookahead(new ParseLookahead(input)), testing(false)
 {}
 
 CFGNode* ParseContext::Start(Callable func)
 {
+    /** OLD
     JoinNode* node = new JoinNode();
 
     current = node;
@@ -59,6 +60,11 @@ CFGNode* ParseContext::Start(Callable func)
     assert(current == node);
 
     return current;
+    **/
+    Do(func, false);
+    assert(!testing);
+    assert(resultNodes.size() == 1);
+    return resultNodes[0];
 }
 
 void ParseContext::Do(Callable func, bool discard)
@@ -72,6 +78,7 @@ void ParseContext::Do(Callable func, bool discard)
     }
     else
     {
+        /** OLD
         // Save prev state
         JoinNode* node = current;
 
@@ -93,6 +100,31 @@ void ParseContext::Do(Callable func, bool discard)
 
         // Restore back to previous state
         current = node;
+        **/
+
+        // Clone the context
+        ParseContext context(*this);
+
+        // Call the function
+        func(&context);
+        assert(!context.testing);
+
+        if (!discard)
+        {
+            if (context.customResult)
+            {
+                // Grab the custom result (stored as the only element in context's results)
+                assert(context.resultNodes.size() == 1);
+                resultNodes.push_back(context.resultNodes[0]);
+            }
+            else
+            {
+                // Create the default new node: a join node
+                JoinNode* newNode = context.EmitJoin();
+                resultNodes.push_back(newNode);
+            }
+        }
+
     }
 }
 
@@ -104,7 +136,7 @@ bool ParseContext::Is(Callable func)
     // Save previous state
     bool prev = testing;
     bool prevResult = testResult;
-    unsigned int pos = lookahead.GetPosition();
+    unsigned int pos = lookahead->GetPosition();
 
     testResult = true;
     testing = true;
@@ -118,7 +150,7 @@ bool ParseContext::Is(Callable func)
     // Restore previous state
     testing = prev;
     testResult = prevResult;
-    lookahead.Rollback(pos);
+    lookahead->Rollback(pos);
 
     return result;
 }
@@ -134,7 +166,7 @@ void ParseContext::Do(Filter charset, bool discard)
     }
     else
     {
-        char c = lookahead.Consume();
+        char c = lookahead->Consume();
         if (!charset(c))
             throw CFGException("Invalid syntax!");
 
@@ -143,26 +175,36 @@ void ParseContext::Do(Filter charset, bool discard)
             CharNode* node = new CharNode();
             node->value = c;
 
-            current->children.push_back(node);
+            //current->children.push_back(node);
+            resultNodes.push_back(node);
         }
     }
 }
 
 bool ParseContext::Is(Filter charset)
 {
-    unsigned int pos = lookahead.GetPosition();
-    char c = lookahead.GetNext();
+    unsigned int pos = lookahead->GetPosition();
+    char c = lookahead->GetNext();
     bool result = charset(c);
-    lookahead.Rollback(pos); // restore state
+    lookahead->Rollback(pos); // restore state
     return result;
 }
 
-void ParseContext::SetName(std::string name)
+ParseContext::ParseContext(const ParseContext& other)
+    : lookahead(other.lookahead), testing(other.testing), testResult(other.testResult),
+      customResult(false), resultName(), resultNodes()
+{ }
+
+void ParseContext::Commit(CFGNode* node)
 {
-    if (!testing)
-    {
-        current->name = name;
-    }
+    assert(!testing);
+
+    if (customResult)
+        throw CFGException("Can only commit once!");
+
+    resultNodes.clear();
+    resultNodes.push_back(node);
+    customResult = true;
 }
 
 void ParseContext::Simulate(Callable func)
@@ -173,13 +215,21 @@ void ParseContext::Simulate(Callable func)
 
 void ParseContext::Simulate(Filter charset)
 {
-    char c = lookahead.GetNext();
+    char c = lookahead->GetNext();
     bool result = charset(c);
 
     if (!result) // The simulate failed! Mark it as a failure
     {
         testResult = false;
     }
+}
+
+JoinNode* ParseContext::EmitJoin()
+{
+    JoinNode* node = new JoinNode();
+    node->name = resultName;
+    node->children = resultNodes;
+    return node;
 }
 
 

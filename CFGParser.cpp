@@ -4,6 +4,7 @@
 
 #include "message_exception.h"
 #include "CFGParseEngine.h"
+#include "CFGTree.h"
 
 /****** Print functions for nodes ******/
 
@@ -135,13 +136,31 @@ void OptWhitespace(ParseContext* context)
 
 void Identifier(ParseContext* context)
 {
-    context->AutoName();
+    //context->AutoName();
 
     context->Do(IdentifierChar);
     if (context->Is(Identifier))
     {
         context->Do(Identifier);
     }
+
+    if (context->IsCommitting())
+    {
+        CharNode* cnode = static_cast<CharNode*>(context->Get(0));
+        if (context->Size() == 1)
+        {
+            IdentifierNode* node = new IdentifierNode();
+            node->value += cnode->value;
+            context->Commit(node);
+        }
+        else
+        {
+            IdentifierNode* node = static_cast<IdentifierNode*>(context->Get(1));
+            node->value = cnode->value + node->value;
+            context->Commit(node);
+        }
+    }
+
 }
 
 /*
