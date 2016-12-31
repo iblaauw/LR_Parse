@@ -3,7 +3,10 @@
 #include <iostream>
 #include <vector>
 
-class CFGNode { };
+class CFGNode
+{
+
+};
 
 class JoinNode : public CFGNode
 {

@@ -33,7 +33,7 @@ char ParseLookahead::Consume()
     return c;
 }
 
-void ParseLookahead::Rollback(int val)
+void ParseLookahead::Rollback(unsigned int val)
 {
     assert(lookPos > val);
     assert(val >= 0);
@@ -63,12 +63,11 @@ CFGNode* ParseContext::Start(Callable func)
 
 void ParseContext::Do(Callable func)
 {
-    std::cout << "DO " << testing << std::endl;
     if (testing)
     {
         if (testResult) // Don't recurse if test failed already
         {
-            testResult = Is(func);
+            Simulate(func);
         }
     }
     else
@@ -93,13 +92,16 @@ void ParseContext::Do(Callable func)
 
 bool ParseContext::Is(Callable func)
 {
-    std::cout << "IS " << testing << std::endl;
+    if (testing && !testResult)
+        return false;
+
     // Save previous state
     bool prev = testing;
     bool prevResult = testResult;
+    unsigned int pos = lookahead.GetPosition();
 
-    testing = true;
     testResult = true;
+    testing = true;
 
     func(this);
 
@@ -110,19 +112,18 @@ bool ParseContext::Is(Callable func)
     // Restore previous state
     testing = prev;
     testResult = prevResult;
+    lookahead.Rollback(pos);
 
     return result;
 }
 
 void ParseContext::Do(Filter charset)
 {
-    std::cout << "DO2 " << testing << std::endl;
     if (testing)
     {
-        if (testResult)
+        if (testResult) // Don't recurse if test failed already
         {
-            char c = lookahead.GetNext();
-            testResult = Is(charset);
+            Simulate(charset);
         }
     }
     else
@@ -140,11 +141,28 @@ void ParseContext::Do(Filter charset)
 
 bool ParseContext::Is(Filter charset)
 {
-    std::cout << "IS2 " << testing << std::endl;
+    unsigned int pos = lookahead.GetPosition();
     char c = lookahead.GetNext();
     bool result = charset(c);
-    lookahead.Rollback(); // restore state
+    lookahead.Rollback(pos); // restore state
     return result;
+}
+
+void ParseContext::Simulate(Callable func)
+{
+    // No need for anything complicated, just forward it
+    func(this);
+}
+
+void ParseContext::Simulate(Filter charset)
+{
+    char c = lookahead.GetNext();
+    bool result = charset(c);
+
+    if (!result) // The simulate failed! Mark it as a failure
+    {
+        testResult = false;
+    }
 }
 
 

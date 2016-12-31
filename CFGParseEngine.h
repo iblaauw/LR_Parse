@@ -25,8 +25,8 @@ public:
     char GetNext();
     char Consume();
 
-    inline int GetPosition() const { return lookPos; }
-    void Rollback(int val);
+    inline unsigned int GetPosition() const { return lookPos; }
+    void Rollback(unsigned int val);
 };
 
 class ParseContext
@@ -54,7 +54,6 @@ public:
 
 private:
     void Simulate(Callable func);
-
     void Simulate(Filter charset);
 };
 
