@@ -136,13 +136,19 @@ std::ostream& CharNode::PrintTo(std::ostream& out) const
                      : EmptyLine
 
     // Statement
-    Statement : OptWhitespace TempList
+    Statement : OptWhitespace Rule
 
-    TempList : RuleToken
-             : RuleToken TempListEnd
+    // Rule
+    Rule : RuleHead OptWhitespace ':' OptWhitespace RuleBody
 
-    TempListEnd : WhiteSpace TempList
+    RuleHead : Identifier
 
+    RuleBody : RuleTokenList
+
+    RuleTokenList : RuleToken
+                  : RuleToken RuleTokenListEnd
+
+    RuleTokenListEnd : WhiteSpace RuleTokenList
 
     // RuleToken
     RuleToken : RuleTokenIdentifier
@@ -308,31 +314,52 @@ void RuleToken(ParseContext* context)
     context->Do(RuleTokenIdentifier);
 }
 
+void RuleTokenList(ParseContext* context);
 
-void TempList(ParseContext* context);
-
-void TempListEnd(ParseContext* context)
+void RuleTokenListEnd(ParseContext* context)
 {
     context->AutoName();
     context->Do(Whitespace);
-    context->Do(TempList);
+    context->Do(RuleTokenList);
 }
 
-void TempList(ParseContext* context)
+void RuleTokenList(ParseContext* context)
 {
     context->AutoName();
     context->Do(RuleToken);
-    if (context->Is(EmptyLine))
+    if (context->Is(RuleTokenListEnd))
     {
-        context->Do(EmptyLine);
+        context->Do(RuleTokenListEnd);
     }
+}
+
+void RuleBody(ParseContext* context)
+{
+    context->AutoName();
+    context->Do(RuleTokenList);
+}
+
+void RuleHead(ParseContext* context)
+{
+    context->AutoName();
+    context->Do(Identifier);
+}
+
+void Rule(ParseContext* context)
+{
+    context->AutoName();
+    context->Do(RuleHead);
+    context->Do(OptWhitespace);
+    context->Do(DoLiteral<':'>);
+    context->Do(OptWhitespace);
+    context->Do(RuleBody);
 }
 
 void Statement(ParseContext* context)
 {
     context->AutoName();
     context->Do(OptWhitespace);
-    context->Do(TempList);
+    context->Do(Rule);
 }
 
 void ProgramStatement(ParseContext* context)

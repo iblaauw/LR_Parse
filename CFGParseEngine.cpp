@@ -50,6 +50,17 @@ void ParseLookahead::Rollback(unsigned int val)
     lookPos = val;
 }
 
+bool ParseLookahead::IsAtEnd() const
+{
+    if (!input.eof())
+        return false;
+
+    if (lookahead.size() == 0)
+        return true;
+
+    return lookahead[0] == std::istream::traits_type::eof();
+}
+
 ParseContext::ParseContext(std::istream& input)
     : lookahead(new ParseLookahead(input)), testing(false)
 {}
@@ -59,6 +70,12 @@ CFGNode* ParseContext::Start(Callable func)
     Do(func, false);
     assert(!testing);
     assert(resultNodes.size() == 1);
+
+    if (!lookahead->IsAtEnd())
+    {
+        std::cout << "Warning: parse finished but there were extra characters in the file." << std::endl;
+    }
+
     return resultNodes[0].get();
 }
 

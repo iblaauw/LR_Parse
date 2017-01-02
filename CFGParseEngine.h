@@ -21,6 +21,8 @@ public:
 
     inline unsigned int GetPosition() const { return lookPos; }
     void Rollback(unsigned int val);
+
+    bool IsAtEnd() const;
 };
 
 class ParseContext
