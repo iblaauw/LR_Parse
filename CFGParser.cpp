@@ -95,6 +95,74 @@ std::ostream& CharNode::PrintTo(std::ostream& out) const
     charset LiteralChar except QUOTE : CHAR
 */
 
+/*
+    START at CFG
+
+    // Whitespace + LineEnd
+
+    OptWhitespace : null
+                  : Whitespace
+
+    Whitespace : WhitespaceChar
+               : WhitespaceChar Whitespace
+
+    charset WhitespaceChar : ' ', '\t'
+
+    LineEnd : '\r' '\n'
+            : '\n'
+
+    EmptyLine : OptWhitespace LineEnd
+
+    // Identifier
+
+    Identifier : IdentifierChars
+
+    IdentifierChars : IdentifierChar IdentifierEndChars
+
+    IdentiferEndChars : null
+                     : IdentifierEndChar IdentifierEndChars
+
+    charset IdentifierChar : 'a'-'z', 'A'-'Z', '_'
+
+    charset IdentifierEndChars : IdentifierChar, '0'-'9'
+
+    // CFG
+
+    CFG : ProgramList
+    ProgramList : null
+                : ProgramStatement ProgramList
+
+    ProgramStatement : Statement
+                     : EmptyLine
+
+    // Statement
+    Statement : OptWhitespace TempList
+
+    TempList : RuleToken
+             : RuleToken TempListEnd
+
+    TempListEnd : WhiteSpace TempList
+
+
+    // RuleToken
+    RuleToken : RuleTokenIdentifier
+
+    RuleTokenIdentifier : NullKeyword
+                        : CharKeyword
+                        : QuoteKeyword
+                        : Identifier
+
+    // Token Keywords
+    NullKeyword : 'null'
+    CharKeyword : 'CHAR'
+    QuoteKeyword : 'QUOTE'
+
+*/
+
+
+
+
+// Utilities, identifiers, whitespace
 
 template <char C>
 bool DoLiteral(char c) { return c == C; }
@@ -134,6 +202,17 @@ void OptWhitespace(ParseContext* context)
     }
 }
 
+void LineEnd(ParseContext* context)
+{
+    context->AutoName();
+
+    if (context->Is(DoLiteral<'\r'>))
+    {
+        context->Do(DoLiteral<'\r'>);
+    }
+    context->Do(DoLiteral<'\n'>);
+}
+
 void Identifier(ParseContext* context)
 {
     //context->AutoName();
@@ -163,6 +242,128 @@ void Identifier(ParseContext* context)
 
 }
 
+void EmptyLine(ParseContext* context)
+{
+    context->AutoName();
+    context->Do(OptWhitespace);
+    context->Do(LineEnd);
+}
+
+// Keywords
+void NullKeyword(ParseContext* context)
+{
+    context->AutoName();
+    context->Do(DoLiteral<'n'>);
+    context->Do(DoLiteral<'u'>);
+    context->Do(DoLiteral<'l'>);
+    context->Do(DoLiteral<'l'>);
+}
+
+void CharKeyword(ParseContext* context)
+{
+    context->AutoName();
+    context->Do(DoLiteral<'C'>);
+    context->Do(DoLiteral<'H'>);
+    context->Do(DoLiteral<'A'>);
+    context->Do(DoLiteral<'R'>);
+}
+
+void QuoteKeyword(ParseContext* context)
+{
+    context->AutoName();
+    context->Do(DoLiteral<'Q'>);
+    context->Do(DoLiteral<'U'>);
+    context->Do(DoLiteral<'O'>);
+    context->Do(DoLiteral<'T'>);
+    context->Do(DoLiteral<'E'>);
+}
+
+
+// Core Grammar
+
+void RuleTokenIdentifier(ParseContext* context)
+{
+    context->AutoName();
+    if (context->Is(NullKeyword))
+    {
+        context->Do(NullKeyword);
+    }
+    else if (context->Is(CharKeyword))
+    {
+        context->Do(CharKeyword);
+    }
+    else if (context->Is(QuoteKeyword))
+    {
+        context->Do(QuoteKeyword);
+    }
+    else
+    {
+        context->Do(Identifier);
+    }
+}
+
+void RuleToken(ParseContext* context)
+{
+    context->AutoName();
+    context->Do(RuleTokenIdentifier);
+}
+
+
+void TempList(ParseContext* context);
+
+void TempListEnd(ParseContext* context)
+{
+    context->AutoName();
+    context->Do(Whitespace);
+    context->Do(TempList);
+}
+
+void TempList(ParseContext* context)
+{
+    context->AutoName();
+    context->Do(RuleToken);
+    if (context->Is(EmptyLine))
+    {
+        context->Do(EmptyLine);
+    }
+}
+
+void Statement(ParseContext* context)
+{
+    context->AutoName();
+    context->Do(OptWhitespace);
+    context->Do(TempList);
+}
+
+void ProgramStatement(ParseContext* context)
+{
+    context->AutoName();
+    if (context->Is(Statement))
+    {
+        context->Do(Statement);
+    }
+    else
+    {
+        context->Do(EmptyLine);
+    }
+}
+
+void ProgramList(ParseContext* context)
+{
+    context->AutoName();
+    if (context->Is(ProgramStatement))
+    {
+        context->Do(ProgramStatement);
+        context->Do(ProgramList);
+    }
+}
+
+void CFG(ParseContext* context)
+{
+    context->AutoName();
+    context->Do(ProgramList);
+}
+
 /*
     As : ASeq ATerm
 
@@ -173,82 +374,16 @@ void Identifier(ParseContext* context)
 
 */
 
-void StatementSequence(ParseContext* context);
-
-void StatementSequenceEnd(ParseContext* context)
-{
-    context->AutoName();
-
-    context->Do(Whitespace, true);
-    context->Do(StatementSequence);
-}
-
-void StatementSequence(ParseContext* context)
-{
-    context->AutoName();
-
-    context->Do(Identifier);
-    if (context->Is(StatementSequenceEnd))
-    {
-        context->Do(StatementSequenceEnd);
-    }
-}
-
-void Statement(ParseContext* context)
-{
-    context->AutoName();
-
-    context->Do(OptWhitespace, true);
-    context->Do(StatementSequence);
-    context->Do(OptWhitespace, true);
-    context->Do(DoLiteral<';'>);
-}
-
 CFGParser::CFGParser(std::istream& input) : input(input)
 {}
 
 void CFGParser::Parse()
 {
     ParseContext context(input);
-    auto* result = context.Start(Statement);
+    //auto* result = context.Start(Statement2);
+    auto* result = context.Start(CFG);
+    //auto* result = context.Start(A);
 
     std::cout << *result << std::endl;
 }
-
-
-//void CFGParser::ProgramList()
-//{
-//    if (IsProgramStatement())
-//    {
-//        ProgramStatement();
-//        ProgramList();
-//    }
-//    else
-//    {
-//        // null
-//    }
-//}
-//
-//void CFGParser::ProgramStatement()
-//{
-//    if (IsStatement())
-//    {
-//        Statement();
-//    }
-//    else if (IsOptWhitespace())
-//    {
-//        OptWhitespace();
-//        LineEnd();
-//    }
-//}
-//
-//void CFGParser::Whitespace()
-//{
-//    WhitespaceChar();
-//    if (IsWhitespace())
-//    {
-//        Whitespace();
-//    }
-//}
-//
 

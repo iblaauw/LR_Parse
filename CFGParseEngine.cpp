@@ -29,8 +29,16 @@ char ParseLookahead::GetNext()
 char ParseLookahead::Consume()
 {
     assert(lookPos == 0);
-    char c = lookahead.front();
-    lookahead.pop_front();
+    char c;
+    if (lookahead.size() == 0)
+    {
+        c = input.get();
+    }
+    else
+    {
+        c = lookahead.front();
+        lookahead.pop_front();
+    }
     return c;
 }
 
@@ -48,20 +56,6 @@ ParseContext::ParseContext(std::istream& input)
 
 CFGNode* ParseContext::Start(Callable func)
 {
-    /** OLD
-    JoinNode* node = new JoinNode();
-
-    current = node;
-    testing = false;
-    testResult = true;
-
-    func(this);
-
-    assert(!testing);
-    assert(current == node);
-
-    return current;
-    **/
     Do(func, false);
     assert(!testing);
     assert(resultNodes.size() == 1);
@@ -79,35 +73,12 @@ void ParseContext::Do(Callable func, bool discard)
     }
     else
     {
-        /** OLD
-        // Save prev state
-        JoinNode* node = current;
-
-        // Create a new node to represent this action
-        JoinNode* newNode = new JoinNode();
-        if (!discard)
-        {
-            // TODO: discarding leaks memory...
-            node->children.push_back(newNode);
-        }
-
-        // Set new state
-        current = newNode;
-
-        // Call the function
-        func(this);
-        assert(!testing);
-        assert(current == newNode);
-
-        // Restore back to previous state
-        current = node;
-        **/
-
         // Clone the context
         ParseContext context(*this);
 
         // Call the function
         func(&context);
+
         assert(!context.testing);
 
         if (!discard)
@@ -126,6 +97,8 @@ void ParseContext::Do(Callable func, bool discard)
                 {
                     newNode->children.push_back(std::move(ptr));
                 }
+
+                newNode->name = context.resultName;
 
                 //auto newNode = context.EmitJoin();
                 resultNodes.push_back(std::move(newNode));
@@ -172,14 +145,17 @@ void ParseContext::Do(Filter charset, bool discard)
     {
         char c = lookahead->Consume();
         if (!charset(c))
+        {
+            std::cout << std::endl << "Error at rule '" << resultName << "':" << std::endl;
+            std::cout << "\t'" << c << "'(" << (int)c <<  ") is not valid in the current rule." << std::endl;
             throw CFGException("Invalid syntax!");
+        }
 
         if (!discard)
         {
             std::unique_ptr<CharNode> node = utils::make_unique<CharNode>();
             node->value = c;
 
-            //current->children.push_back(node);
             resultNodes.push_back(std::move(node));
         }
     }
