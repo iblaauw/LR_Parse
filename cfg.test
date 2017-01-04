@@ -1,1 +1,2 @@
-  thing : hello world
+  thing : 'a' 'bcd' hello world
+        : and another 'one'

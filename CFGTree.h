@@ -12,3 +12,11 @@ protected:
     std::ostream& PrintTo(std::ostream& out) const override;
 };
 
+class LiteralNode : public CFGNode
+{
+public:
+    std::string value;
+protected:
+    std::ostream& PrintTo(std::ostream& out) const override;
+};
+

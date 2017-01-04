@@ -142,6 +142,7 @@ std::ostream& CharNode::PrintTo(std::ostream& out) const
     Rule : RuleHead OptWhitespace ':' OptWhitespace RuleBody
 
     RuleHead : Identifier
+             : null
 
     RuleBody : RuleTokenList
 
@@ -151,7 +152,16 @@ std::ostream& CharNode::PrintTo(std::ostream& out) const
     RuleTokenListEnd : WhiteSpace RuleTokenList
 
     // RuleToken
-    RuleToken : RuleTokenIdentifier
+    RuleToken : LiteralToken
+              : RuleTokenIdentifier
+
+    // Literal
+    Literal : QUOTE LiteralCharList QUOTE
+
+    LiteralCharList : LiteralChar
+                    : LiteralChar LiteralCharList
+
+    charset LiteralChar = CHAR except QUOTE, '\n', '\r'
 
     RuleTokenIdentifier : NullKeyword
                         : CharKeyword
@@ -183,7 +193,7 @@ bool IdentifierEndChars(char c)
     return IdentifierChar(c) || (c >= '0' && c <= '9');
 }
 
-bool LiteralChar(char c) { return c != '\''; }
+bool LiteralChar(char c) { return c != '\'' && c != '\n' && c != '\r'; }
 
 bool WhitespaceChar(char c) { return c == ' ' || c == '\t'; }
 
@@ -255,6 +265,7 @@ void EmptyLine(ParseContext* context)
     context->Do(LineEnd);
 }
 
+
 // Keywords
 void NullKeyword(ParseContext* context)
 {
@@ -284,6 +295,47 @@ void QuoteKeyword(ParseContext* context)
     context->Do(DoLiteral<'E'>);
 }
 
+// Literal
+
+void LiteralCharList(ParseContext* context)
+{
+    context->Do(LiteralChar);
+    if (context->Is(LiteralCharList))
+    {
+        context->Do(LiteralCharList);
+    }
+
+    if (context->IsCommitting())
+    {
+        auto charNode = context->AcquireAs<CharNode>(0);
+        std::unique_ptr<LiteralNode> node;
+        if (context->Size() == 1)
+        {
+            node = utils::make_unique<LiteralNode>();
+        }
+        else
+        {
+            node = context->AcquireAs<LiteralNode>(1);
+        }
+
+        node->value = charNode->value + node->value;
+
+        context->Commit(std::move(node));
+    }
+}
+
+void Literal(ParseContext* context)
+{
+    context->Do(DoLiteral<'\''>);
+    context->Do(LiteralCharList);
+    context->Do(DoLiteral<'\''>);
+
+    if (context->IsCommitting())
+    {
+        auto node = context->AcquireAs<LiteralNode>(1);
+        context->Commit(std::move(node));
+    }
+}
 
 // Core Grammar
 
@@ -311,7 +363,15 @@ void RuleTokenIdentifier(ParseContext* context)
 void RuleToken(ParseContext* context)
 {
     context->AutoName();
-    context->Do(RuleTokenIdentifier);
+
+    if (context->Is(Literal))
+    {
+        context->Do(Literal);
+    }
+    else
+    {
+        context->Do(RuleTokenIdentifier);
+    }
 }
 
 void RuleTokenList(ParseContext* context);
@@ -342,7 +402,11 @@ void RuleBody(ParseContext* context)
 void RuleHead(ParseContext* context)
 {
     context->AutoName();
-    context->Do(Identifier);
+
+    if (context->Is(Identifier))
+    {
+        context->Do(Identifier);
+    }
 }
 
 void Rule(ParseContext* context)

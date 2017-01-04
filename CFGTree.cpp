@@ -6,3 +6,9 @@ std::ostream& IdentifierNode::PrintTo(std::ostream& out) const
     return out;
 }
 
+std::ostream& LiteralNode::PrintTo(std::ostream& out) const
+{
+    out << "[Literal '" << value << "']";
+    return out;
+}
+
