@@ -41,4 +41,55 @@ std::ostream& ProgramListNode::PrintTo(std::ostream& out) const
     return out;
 }
 
+std::ostream& LiteralRuleToken::PrintTo(std::ostream& out) const
+{
+    out << "[Token '" << literal->value << "']";
+    return out;
+}
+
+std::ostream& NullRuleToken::PrintTo(std::ostream& out) const
+{
+    out << "[Token <null>]";
+    return out;
+}
+
+std::ostream& CharRuleToken::PrintTo(std::ostream& out) const
+{
+    out << "[Token <CHAR>]";
+    return out;
+}
+
+std::ostream& QuoteRuleToken::PrintTo(std::ostream& out) const
+{
+    out << "[Token <QUOTE>]";
+    return out;
+}
+
+std::ostream& IdentifierRuleToken::PrintTo(std::ostream& out) const
+{
+    out << "[Token \"" << identifier->value << "\"]";
+    return out;
+}
+
+std::ostream& RuleHeadNode::PrintTo(std::ostream& out) const
+{
+    out << "[RuleHead ";
+    if (identifier != nullptr)
+    {
+        out << '"' << identifier->value << '"';
+    }
+    out << "]";
+    return out;
+}
+
+std::ostream& RuleBodyNode::PrintTo(std::ostream& out) const
+{
+    out << "[RuleBody";
+    for (const auto& node : children)
+    {
+        out << " " << *node;
+    }
+    out << " ]";
+    return out;
+}
 

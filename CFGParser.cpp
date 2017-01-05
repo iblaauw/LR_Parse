@@ -31,70 +31,6 @@ std::ostream& CharNode::PrintTo(std::ostream& out) const
 }
 
 /// The CFG for parsing the input CFG:
-/*  Start state = CFG
-    CFG : ProgramList
-    ProgramList : null
-                : ProgramStatement ProgramList
-    ProgramStatement : Statement
-                     : OptWhitespace LineEnd
-                     : Comment
-
-    OptWhitespace : null
-                  : WhitespaceChar OptWhitespace
-
-    Whitespace : WhitespaceChar
-               : WhitespaceChar Whitespace
-
-    charset WhitespaceChar : ' ', '\t'
-
-    LineEnd : '\r' '\n'
-            : '\n'
-
-    Statement : Rule
-              : Charset
-
-    Rule : RuleHead OptWhitespace ':' OptWhitespace RuleBodyList RuleEnd
-
-    RuleHead : OptWhitespace Identifier
-
-    Identifier : IdentifierChars
-
-    IdentifierChars : IdentifierStartChar IdentifierEndChars
-
-    IdentiferEndChars : null
-                     : IdentifierEndChar IdentifierEndChars
-
-    RuleBodyList : RuleBody
-                 : RuleBody OptWhitespace LineEnd OptWhitespace ':' OptWhitespace RuleBodyList
-
-    RuleBody : RuleToken
-             : RuleToken Whitespace RuleBody
-
-    RuleToken : RuleTokenIdentifier
-              : Literal
-
-    RuleTokenIdentifier : NullKeyword
-                        : CharKeyword
-
-    NullKeyword : 'null'
-
-    CharKeyword : 'CHAR'
-
-    charset IdentifierChar : 'a'-'z', 'A'-'Z', '_'
-
-    charset IdentifierEndChars : IdentifierChar, '0'-'9'
-
-    Literal : QUOTE LiteralChars QUOTE
-            : QuoteKeyword
-
-    QuoteKeyword : 'QUOTE'
-
-    LiteralChars : LiteralChar
-                 : LiteralChar LiteralChars
-
-    charset LiteralChar except QUOTE : CHAR
-*/
-
 /*
     START at CFG
 
@@ -365,22 +301,40 @@ void Literal(ParseContext* context)
 
 void RuleTokenIdentifier(ParseContext* context)
 {
-    context->AutoName();
     if (context->Is(NullKeyword))
     {
         context->Do(NullKeyword);
+        if (context->IsCommitting())
+        {
+            context->Commit(utils::make_unique<NullRuleToken>());
+        }
     }
     else if (context->Is(CharKeyword))
     {
         context->Do(CharKeyword);
+        if (context->IsCommitting())
+        {
+            context->Commit(utils::make_unique<CharRuleToken>());
+        }
     }
     else if (context->Is(QuoteKeyword))
     {
         context->Do(QuoteKeyword);
+        if (context->IsCommitting())
+        {
+            context->Commit(utils::make_unique<QuoteRuleToken>());
+        }
     }
     else
     {
         context->Do(Identifier);
+        if (context->IsCommitting())
+        {
+            auto id = context->AcquireAs<IdentifierNode>(0);
+            auto node = utils::make_unique<IdentifierRuleToken>();
+            node->identifier = std::move(id);
+            context->Commit(std::move(node));
+        }
     }
 }
 
@@ -391,10 +345,21 @@ void RuleToken(ParseContext* context)
     if (context->Is(Literal))
     {
         context->Do(Literal);
+        if (context->IsCommitting())
+        {
+            auto literal = context->AcquireAs<LiteralNode>(0);
+            auto node = utils::make_unique<LiteralRuleToken>();
+            node->literal = std::move(literal);
+            context->Commit(std::move(node));
+        }
     }
     else
     {
         context->Do(RuleTokenIdentifier);
+        if (context->IsCommitting())
+        {
+            context->Commit(context->AcquireAs<CFGNode>(0));
+        }
     }
 }
 
@@ -402,25 +367,50 @@ void RuleTokenList(ParseContext* context);
 
 void RuleTokenListEnd(ParseContext* context)
 {
-    context->AutoName();
-    context->Do(Whitespace);
+    context->Do(Whitespace, true);
     context->Do(RuleTokenList);
+
+    if (context->IsCommitting())
+    {
+        // Forward
+        context->Commit(context->AcquireAs<CFGNode>(0));
+    }
 }
 
 void RuleTokenList(ParseContext* context)
 {
-    context->AutoName();
     context->Do(RuleToken);
     if (context->Is(RuleTokenListEnd))
     {
         context->Do(RuleTokenListEnd);
     }
+
+    if (context->IsCommitting())
+    {
+        auto token = context->AcquireAs<RuleTokenNode>(0);
+        std::unique_ptr<RuleBodyNode> node;
+        if (context->Size() == 1)
+        {
+            node = utils::make_unique<RuleBodyNode>();
+        }
+        else
+        {
+            node = context->AcquireAs<RuleBodyNode>(1);
+        }
+        node->children.push_front(std::move(token));
+        context->Commit(std::move(node));
+    }
 }
 
 void RuleBody(ParseContext* context)
 {
-    context->AutoName();
     context->Do(RuleTokenList);
+
+    if (context->IsCommitting())
+    {
+        // Forward
+        context->Commit(context->AcquireAs<CFGNode>(0));
+    }
 }
 
 void RuleHead(ParseContext* context)
@@ -431,15 +421,25 @@ void RuleHead(ParseContext* context)
     {
         context->Do(Identifier);
     }
+
+    if (context->IsCommitting())
+    {
+        auto node = utils::make_unique<RuleHeadNode>();
+        if (context->Size() > 0)
+        {
+            node->identifier = context->AcquireAs<IdentifierNode>(0);
+        }
+        context->Commit(std::move(node));
+    }
 }
 
 void Rule(ParseContext* context)
 {
     context->AutoName();
     context->Do(RuleHead);
-    context->Do(OptWhitespace);
-    context->Do(DoLiteral<':'>);
-    context->Do(OptWhitespace);
+    context->Do(OptWhitespace, true);
+    context->Do(DoLiteral<':'>, true);
+    context->Do(OptWhitespace, true);
     context->Do(RuleBody);
 }
 
@@ -541,7 +541,7 @@ void Charset(ParseContext* context)
 void Statement(ParseContext* context)
 {
     context->AutoName();
-    context->Do(OptWhitespace);
+    context->Do(OptWhitespace, true);
     if (context->Is(Charset))
     {
         context->Do(Charset);
@@ -561,7 +561,7 @@ void ProgramStatement(ParseContext* context)
     }
     else
     {
-        context->Do(EmptyLine);
+        context->Do(EmptyLine, true);
     }
 }
 

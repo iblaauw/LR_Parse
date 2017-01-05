@@ -1,4 +1,8 @@
   thing : 'a' 'bcd' hello world
         : and another 'one'
 
+    redfish : QUOTE bluefish QUOTE
+            : CHAR Alphabet
+            : null
+
 charset Alphabet : 'a'-'z', ' '
