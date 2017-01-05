@@ -93,3 +93,61 @@ std::ostream& RuleBodyNode::PrintTo(std::ostream& out) const
     return out;
 }
 
+std::ostream& RuleNode::PrintTo(std::ostream& out) const
+{
+    out << "[Rule " << *head << " " << *body << " ]";
+    return out;
+}
+
+std::ostream& RangeCharsetToken::PrintTo(std::ostream& out) const
+{
+    out << "[Token '" << start->value << "'-'" << end->value << "' ]";
+    return out;
+}
+
+std::ostream& LiteralCharsetToken::PrintTo(std::ostream& out) const
+{
+    out << "[Token '" << literal->value << "' ]";
+    return out;
+}
+
+std::ostream& IdentifierCharsetToken::PrintTo(std::ostream& out) const
+{
+    out << "[Token '" << identifier->value << "' ]";
+    return out;
+}
+
+std::ostream& CharCharsetToken::PrintTo(std::ostream& out) const
+{
+    out << "[Token <CHAR> ]";
+    return out;
+}
+
+std::ostream& QuoteCharsetToken::PrintTo(std::ostream& out) const
+{
+    out << "[Token <QUOTE> ]";
+    return out;
+}
+
+std::ostream& CharsetBodyNode::PrintTo(std::ostream& out) const
+{
+    out << "[CharsetBody ";
+    for (auto& node : children)
+    {
+        out << *node << " ";
+    }
+    out << "]";
+    return out;
+}
+
+std::ostream& CharsetHeadNode::PrintTo(std::ostream& out) const
+{
+    out << "[CharsetHead \"" << identifier->value << "\" ]";
+    return out;
+}
+
+std::ostream& CharsetNode::PrintTo(std::ostream& out) const
+{
+    out << "[Charset " << *head << " " << *body << " ]";
+    return out;
+}

@@ -8,6 +8,8 @@
 
 class ParseContext;
 
+// Core
+
 class IdentifierNode : public CFGNode
 {
 public:
@@ -32,6 +34,8 @@ public:
 protected:
     std::ostream& PrintTo(std::ostream& out) const override;
 };
+
+// Rules
 
 class RuleTokenNode : public CFGNode
 {
@@ -87,4 +91,78 @@ protected:
     std::ostream& PrintTo(std::ostream& out) const override;
 };
 
+class RuleNode : public CFGNode
+{
+public:
+    std::unique_ptr<RuleHeadNode> head;
+    std::unique_ptr<RuleBodyNode> body;
+protected:
+    std::ostream& PrintTo(std::ostream& out) const override;
+};
+
+// Charsets
+
+class CharsetTokenNode : public CFGNode
+{};
+
+class RangeCharsetToken : public CharsetTokenNode
+{
+public:
+    std::unique_ptr<LiteralNode> start, end;
+protected:
+    std::ostream& PrintTo(std::ostream& out) const override;
+};
+
+class LiteralCharsetToken : public CharsetTokenNode
+{
+public:
+    std::unique_ptr<LiteralNode> literal;
+protected:
+    std::ostream& PrintTo(std::ostream& out) const override;
+};
+
+class IdentifierCharsetToken : public CharsetTokenNode
+{
+public:
+    std::unique_ptr<IdentifierNode> identifier;
+protected:
+    std::ostream& PrintTo(std::ostream& out) const override;
+};
+
+class CharCharsetToken : public CharsetTokenNode
+{
+protected:
+    std::ostream& PrintTo(std::ostream& out) const override;
+};
+
+class QuoteCharsetToken : public CharsetTokenNode
+{
+protected:
+    std::ostream& PrintTo(std::ostream& out) const override;
+};
+
+class CharsetBodyNode : public CFGNode
+{
+public:
+    std::forward_list<std::unique_ptr<CharsetTokenNode>> children;
+protected:
+    std::ostream& PrintTo(std::ostream& out) const override;
+};
+
+class CharsetHeadNode : public CFGNode
+{
+public:
+    std::unique_ptr<IdentifierNode> identifier;
+protected:
+    std::ostream& PrintTo(std::ostream& out) const override;
+};
+
+class CharsetNode : public CFGNode
+{
+public:
+    std::unique_ptr<CharsetHeadNode> head;
+    std::unique_ptr<CharsetBodyNode> body;
+protected:
+    std::ostream& PrintTo(std::ostream& out) const override;
+};
 

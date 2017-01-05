@@ -6,3 +6,4 @@
             : null
 
 charset Alphabet : 'a'-'z', ' '
+charset Punctuation: '@'-'=', QUOTE

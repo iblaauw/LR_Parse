@@ -135,7 +135,6 @@ std::ostream& CharNode::PrintTo(std::ostream& out) const
 
 
 
-
 // Utilities, identifiers, whitespace
 
 template <char C>
@@ -340,8 +339,6 @@ void RuleTokenIdentifier(ParseContext* context)
 
 void RuleToken(ParseContext* context)
 {
-    context->AutoName();
-
     if (context->Is(Literal))
     {
         context->Do(Literal);
@@ -415,8 +412,6 @@ void RuleBody(ParseContext* context)
 
 void RuleHead(ParseContext* context)
 {
-    context->AutoName();
-
     if (context->Is(Identifier))
     {
         context->Do(Identifier);
@@ -435,23 +430,36 @@ void RuleHead(ParseContext* context)
 
 void Rule(ParseContext* context)
 {
-    context->AutoName();
     context->Do(RuleHead);
     context->Do(OptWhitespace, true);
     context->Do(DoLiteral<':'>, true);
     context->Do(OptWhitespace, true);
     context->Do(RuleBody);
+
+    if (context->IsCommitting())
+    {
+        auto node = utils::make_unique<RuleNode>();
+        node->head = context->AcquireAs<RuleHeadNode>(0);
+        node->body = context->AcquireAs<RuleBodyNode>(1);
+        context->Commit(std::move(node));
+    }
 }
 
 // Charset
 
 void CharsetRange(ParseContext* context)
 {
-    context->AutoName();
-
     context->Do(Literal);
     context->Do(DoLiteral<'-'>);
     context->Do(Literal);
+
+    if (context->IsCommitting())
+    {
+        auto node = utils::make_unique<RangeCharsetToken>();
+        node->start = context->AcquireAs<LiteralNode>(0);
+        node->end = context->AcquireAs<LiteralNode>(2);
+        context->Commit(std::move(node));
+    }
 }
 
 void CharsetToken(ParseContext* context)
@@ -461,22 +469,46 @@ void CharsetToken(ParseContext* context)
     if (context->Is(CharsetRange))
     {
         context->Do(CharsetRange);
+        if (context->IsCommitting())
+        {
+            context->Commit(context->AcquireAs<CFGNode>(0)); // Forward
+        }
     }
     else if (context->Is(Literal))
     {
         context->Do(Literal);
+        if (context->IsCommitting())
+        {
+            auto node = utils::make_unique<LiteralCharsetToken>();
+            node->literal = context->AcquireAs<LiteralNode>(0);
+            context->Commit(std::move(node));
+        }
     }
     else if (context->Is(CharKeyword))
     {
         context->Do(CharKeyword);
+        if (context->IsCommitting())
+        {
+            context->Commit(utils::make_unique<CharCharsetToken>());
+        }
     }
     else if (context->Is(QuoteKeyword))
     {
         context->Do(QuoteKeyword);
+        if (context->IsCommitting())
+        {
+            context->Commit(utils::make_unique<QuoteCharsetToken>());
+        }
     }
     else
     {
         context->Do(Identifier);
+        if (context->IsCommitting())
+        {
+            auto node = utils::make_unique<IdentifierCharsetToken>();
+            node->identifier = context->AcquireAs<IdentifierNode>(0);
+            context->Commit(std::move(node));
+        }
     }
 }
 
@@ -484,56 +516,90 @@ void CharsetBodyList(ParseContext* context);
 
 void CharsetBodyEnd(ParseContext* context)
 {
-    context->AutoName();
-
-    context->Do(OptWhitespace);
-    context->Do(DoLiteral<','>);
-    context->Do(OptWhitespace);
+    context->Do(OptWhitespace, true);
+    context->Do(DoLiteral<','>, true);
+    context->Do(OptWhitespace, true);
     context->Do(CharsetBodyList);
+
+    if (context->IsCommitting())
+    {
+        //Forward
+        context->Commit(context->AcquireAs<CFGNode>(0));
+    }
 }
 
 void CharsetBodyList(ParseContext* context)
 {
-    context->AutoName();
-
     context->Do(CharsetToken);
     if (context->Is(CharsetBodyEnd))
     {
         context->Do(CharsetBodyEnd);
     }
+
+    if (context->IsCommitting())
+    {
+        auto token = context->AcquireAs<CharsetTokenNode>(0);
+        std::unique_ptr<CharsetBodyNode> node;
+        if (context->Size() == 1)
+        {
+            node = utils::make_unique<CharsetBodyNode>();
+        }
+        else
+        {
+            node = context->AcquireAs<CharsetBodyNode>(1);
+        }
+
+        node->children.push_front(std::move(token));
+        context->Commit(std::move(node));
+    }
 }
 
 void CharsetBody(ParseContext* context)
 {
-    context->AutoName();
-
     context->Do(CharsetBodyList);
+
+    if (context->IsCommitting())
+    {
+        context->Commit(context->AcquireAs<CFGNode>(0)); // Forward
+    }
 }
 
 void CharsetHead(ParseContext* context)
 {
-    context->AutoName();
+    context->Do(DoLiteral<'c'>, true);
+    context->Do(DoLiteral<'h'>, true);
+    context->Do(DoLiteral<'a'>, true);
+    context->Do(DoLiteral<'r'>, true);
+    context->Do(DoLiteral<'s'>, true);
+    context->Do(DoLiteral<'e'>, true);
+    context->Do(DoLiteral<'t'>, true);
 
-    context->Do(DoLiteral<'c'>);
-    context->Do(DoLiteral<'h'>);
-    context->Do(DoLiteral<'a'>);
-    context->Do(DoLiteral<'r'>);
-    context->Do(DoLiteral<'s'>);
-    context->Do(DoLiteral<'e'>);
-    context->Do(DoLiteral<'t'>);
-
-    context->Do(Whitespace);
+    context->Do(Whitespace, true);
     context->Do(Identifier);
+
+    if (context->IsCommitting())
+    {
+        auto node = utils::make_unique<CharsetHeadNode>();
+        node->identifier = context->AcquireAs<IdentifierNode>(0);
+        context->Commit(std::move(node));
+    }
 }
 
 void Charset(ParseContext* context)
 {
-    context->AutoName();
     context->Do(CharsetHead);
-    context->Do(OptWhitespace);
-    context->Do(DoLiteral<':'>);
-    context->Do(OptWhitespace);
+    context->Do(OptWhitespace, true);
+    context->Do(DoLiteral<':'>, true);
+    context->Do(OptWhitespace, true);
     context->Do(CharsetBody);
+
+    if (context->IsCommitting())
+    {
+        auto node = utils::make_unique<CharsetNode>();
+        node->head = context->AcquireAs<CharsetHeadNode>(0);
+        node->body = context->AcquireAs<CharsetBodyNode>(1);
+        context->Commit(std::move(node));
+    }
 }
 
 // Program Statements
@@ -563,12 +629,19 @@ void ProgramStatement(ParseContext* context)
     {
         context->Do(EmptyLine, true);
     }
+
+    if (context->IsCommitting())
+    {
+        if (context->Size() > 0)
+        {
+            // Forward
+            context->Commit(context->AcquireAs<CFGNode>(0));
+        }
+    }
 }
 
 void ProgramList(ParseContext* context)
 {
-    //context->AutoName();
-
     if (context->Is(ProgramStatement))
     {
         context->Do(ProgramStatement);
@@ -586,16 +659,6 @@ void CFG(ParseContext* context)
     context->AutoName();
     context->Do(ProgramList);
 }
-
-/*
-    As : ASeq ATerm
-
-    ASeq : A ASeqEnd
-         : A
-
-    ASeqEnd : B ASeq
-
-*/
 
 CFGParser::CFGParser(std::istream& input) : input(input)
 {}
