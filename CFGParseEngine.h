@@ -4,7 +4,8 @@
 #include <iostream>
 #include <string>
 
-#include "CFGParser.h"
+#include "CFGTree.h"
+#include "compiler_patch.h"
 
 class ParseLookahead
 {

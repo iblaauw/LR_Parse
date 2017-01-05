@@ -5,30 +5,8 @@
 #include "message_exception.h"
 #include "CFGParseEngine.h"
 #include "CFGTree.h"
+#include "compiler_patch.h"
 
-/****** Print functions for nodes ******/
-
-std::ostream& JoinNode::PrintTo(std::ostream& out) const
-{
-    out << "[";
-    out << name;
-
-    for (const NodePtr& child : children)
-    {
-        out << " ";
-        out << *child;
-    }
-
-    out << " ]";
-
-    return out;
-}
-
-std::ostream& CharNode::PrintTo(std::ostream& out) const
-{
-    out << '\'' << value << '\'';
-    return out;
-}
 
 /// The CFG for parsing the input CFG:
 /*

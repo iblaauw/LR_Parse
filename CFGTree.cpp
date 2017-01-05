@@ -1,5 +1,30 @@
 #include "CFGTree.h"
 #include "CFGParseEngine.h"
+#include "CFGPasses.h"
+
+// Printing statements
+
+std::ostream& JoinNode::PrintTo(std::ostream& out) const
+{
+    out << "[";
+    out << name;
+
+    for (const NodePtr& child : children)
+    {
+        out << " ";
+        out << *child;
+    }
+
+    out << " ]";
+
+    return out;
+}
+
+std::ostream& CharNode::PrintTo(std::ostream& out) const
+{
+    out << '\'' << value << '\'';
+    return out;
+}
 
 std::ostream& IdentifierNode::PrintTo(std::ostream& out) const
 {
@@ -151,3 +176,34 @@ std::ostream& CharsetNode::PrintTo(std::ostream& out) const
     out << "[Charset " << *head << " " << *body << " ]";
     return out;
 }
+
+// Declare Visitor Accept function
+
+#define DEFINE_ACCEPT_METHOD(TYPE) \
+    void TYPE::AcceptPass(CFGPassBase& pass) \
+    { pass.Visit(*this); }
+
+DEFINE_ACCEPT_METHOD(CFGNode                  )
+DEFINE_ACCEPT_METHOD(JoinNode                 )
+DEFINE_ACCEPT_METHOD(CharNode                 )
+DEFINE_ACCEPT_METHOD(IdentifierNode           )
+DEFINE_ACCEPT_METHOD(LiteralNode              )
+DEFINE_ACCEPT_METHOD(ProgramListNode          )
+DEFINE_ACCEPT_METHOD(LiteralRuleToken         )
+DEFINE_ACCEPT_METHOD(NullRuleToken            )
+DEFINE_ACCEPT_METHOD(CharRuleToken            )
+DEFINE_ACCEPT_METHOD(QuoteRuleToken           )
+DEFINE_ACCEPT_METHOD(IdentifierRuleToken      )
+DEFINE_ACCEPT_METHOD(RuleHeadNode             )
+DEFINE_ACCEPT_METHOD(RuleBodyNode             )
+DEFINE_ACCEPT_METHOD(RuleNode                 )
+DEFINE_ACCEPT_METHOD(RangeCharsetToken        )
+DEFINE_ACCEPT_METHOD(LiteralCharsetToken      )
+DEFINE_ACCEPT_METHOD(IdentifierCharsetToken   )
+DEFINE_ACCEPT_METHOD(CharCharsetToken         )
+DEFINE_ACCEPT_METHOD(QuoteCharsetToken        )
+DEFINE_ACCEPT_METHOD(CharsetBodyNode          )
+DEFINE_ACCEPT_METHOD(CharsetHeadNode          )
+DEFINE_ACCEPT_METHOD(CharsetNode              )
+
+
