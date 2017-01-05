@@ -1,2 +1,4 @@
   thing : 'a' 'bcd' hello world
         : and another 'one'
+
+charset Alphabet : 'a'-'z', ' '

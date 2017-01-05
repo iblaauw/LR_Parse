@@ -136,7 +136,8 @@ std::ostream& CharNode::PrintTo(std::ostream& out) const
                      : EmptyLine
 
     // Statement
-    Statement : OptWhitespace Rule
+    Statement : OptWhitespace Charset
+              : OptWhitespace Rule
 
     // Rule
     Rule : RuleHead OptWhitespace ':' OptWhitespace RuleBody
@@ -161,7 +162,7 @@ std::ostream& CharNode::PrintTo(std::ostream& out) const
     LiteralCharList : LiteralChar
                     : LiteralChar LiteralCharList
 
-    charset LiteralChar = CHAR except QUOTE, '\n', '\r'
+    charset LiteralChar : CHAR except QUOTE, '\n', '\r'
 
     RuleTokenIdentifier : NullKeyword
                         : CharKeyword
@@ -172,6 +173,27 @@ std::ostream& CharNode::PrintTo(std::ostream& out) const
     NullKeyword : 'null'
     CharKeyword : 'CHAR'
     QuoteKeyword : 'QUOTE'
+
+    // Charset
+    Charset : CharsetHead OptWhitespace ':' OptWhitespace CharsetBody
+
+    CharsetHead : 'charset' Whitespace Identifier
+
+    CharsetBody : CharsetBodyList
+
+    CharsetBodyList : CharsetToken
+                    : CharsetToken CharsetBodyEnd
+
+    CharsetBodyEnd : OptWhitespace ',' OptWhitespace CharsetBodyList
+
+    CharsetToken : CharsetRange
+                 : Literal
+                 : CharKeyword
+                 : QuoteKeyword
+                 : Identifier
+
+    CharsetRange : Literal '-' Literal
+            // Note: NO whitespace, invalid ranges checked in semantics (i.e. 'abc'-'123')
 
 */
 
@@ -337,7 +359,9 @@ void Literal(ParseContext* context)
     }
 }
 
-// Core Grammar
+////**** Core Grammar ****////
+
+// Rules
 
 void RuleTokenIdentifier(ParseContext* context)
 {
@@ -419,11 +443,113 @@ void Rule(ParseContext* context)
     context->Do(RuleBody);
 }
 
+// Charset
+
+void CharsetRange(ParseContext* context)
+{
+    context->AutoName();
+
+    context->Do(Literal);
+    context->Do(DoLiteral<'-'>);
+    context->Do(Literal);
+}
+
+void CharsetToken(ParseContext* context)
+{
+    context->AutoName();
+
+    if (context->Is(CharsetRange))
+    {
+        context->Do(CharsetRange);
+    }
+    else if (context->Is(Literal))
+    {
+        context->Do(Literal);
+    }
+    else if (context->Is(CharKeyword))
+    {
+        context->Do(CharKeyword);
+    }
+    else if (context->Is(QuoteKeyword))
+    {
+        context->Do(QuoteKeyword);
+    }
+    else
+    {
+        context->Do(Identifier);
+    }
+}
+
+void CharsetBodyList(ParseContext* context);
+
+void CharsetBodyEnd(ParseContext* context)
+{
+    context->AutoName();
+
+    context->Do(OptWhitespace);
+    context->Do(DoLiteral<','>);
+    context->Do(OptWhitespace);
+    context->Do(CharsetBodyList);
+}
+
+void CharsetBodyList(ParseContext* context)
+{
+    context->AutoName();
+
+    context->Do(CharsetToken);
+    if (context->Is(CharsetBodyEnd))
+    {
+        context->Do(CharsetBodyEnd);
+    }
+}
+
+void CharsetBody(ParseContext* context)
+{
+    context->AutoName();
+
+    context->Do(CharsetBodyList);
+}
+
+void CharsetHead(ParseContext* context)
+{
+    context->AutoName();
+
+    context->Do(DoLiteral<'c'>);
+    context->Do(DoLiteral<'h'>);
+    context->Do(DoLiteral<'a'>);
+    context->Do(DoLiteral<'r'>);
+    context->Do(DoLiteral<'s'>);
+    context->Do(DoLiteral<'e'>);
+    context->Do(DoLiteral<'t'>);
+
+    context->Do(Whitespace);
+    context->Do(Identifier);
+}
+
+void Charset(ParseContext* context)
+{
+    context->AutoName();
+    context->Do(CharsetHead);
+    context->Do(OptWhitespace);
+    context->Do(DoLiteral<':'>);
+    context->Do(OptWhitespace);
+    context->Do(CharsetBody);
+}
+
+// Program Statements
+
 void Statement(ParseContext* context)
 {
     context->AutoName();
     context->Do(OptWhitespace);
-    context->Do(Rule);
+    if (context->Is(Charset))
+    {
+        context->Do(Charset);
+    }
+    else
+    {
+        context->Do(Rule);
+    }
 }
 
 void ProgramStatement(ParseContext* context)
@@ -441,11 +567,17 @@ void ProgramStatement(ParseContext* context)
 
 void ProgramList(ParseContext* context)
 {
-    context->AutoName();
+    //context->AutoName();
+
     if (context->Is(ProgramStatement))
     {
         context->Do(ProgramStatement);
         context->Do(ProgramList);
+    }
+
+    if (context->IsCommitting())
+    {
+        ProgramListNode::Commit(context);
     }
 }
 
