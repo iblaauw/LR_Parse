@@ -38,7 +38,7 @@ public:
     std::vector<NodePtr> children;
     std::string name;
 
-    void AcceptPass(CFGPassBase& pass) override;
+    DECLARE_ACCEPT_METHOD
 protected:
     std::ostream& PrintTo(std::ostream& out) const override;
 };
@@ -48,7 +48,7 @@ class CharNode : public CFGNode
 public:
     char value;
 
-    void AcceptPass(CFGPassBase& pass) override;
+    DECLARE_ACCEPT_METHOD
 protected:
     std::ostream& PrintTo(std::ostream& out) const override;
 };
