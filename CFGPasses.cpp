@@ -70,33 +70,42 @@ DEF_HAS_MEMBER_VARIABLE(HasLiteral, literal);
 
 template <class Node>
 typename std::enable_if<HasChildren<Node>::value, void>::type
-DoVisitImpl(CFGPassBase* pass, Node& node)
+DoVisitImpl(CFGPassBase& pass, Node& node)
 {
-    
+    for (const auto& child : node.children)
+    {
+        child->AcceptPass(pass);
+    }
 }
 
 template <class Node>
 typename std::enable_if<HasIdentifier<Node>::value, void>::type
-DoVisitImpl(CFGPassBase* pass, Node& node)
+DoVisitImpl(CFGPassBase& pass, Node& node)
 {
+    if (node.identifier != nullptr)
+    {
+        node.identifier->AcceptPass(pass);
+    }
 }
 
 template <class Node>
 typename std::enable_if<HasLiteral<Node>::value, void>::type
-DoVisitImpl(CFGPassBase* pass, Node& node)
+DoVisitImpl(CFGPassBase& pass, Node& node)
 {
+    node.literal->AcceptPass(pass);
 }
 
 template <class Node>
 typename std::enable_if<ConstexprAnd<!HasChildren<Node>::value, !HasIdentifier<Node>::value, !HasLiteral<Node>::value>::value, void>::type
-DoVisitImpl(CFGPassBase* pass, Node& node)
+DoVisitImpl(CFGPassBase& pass, Node& node)
 {
+    // NOOP
 }
 
 template <class Node>
 void CFGPassBase::DoVisit(Node& node)
 {
-
+    DoVisitImpl(*this, node);
 }
 
 
@@ -113,16 +122,33 @@ void CFGPassBase::Visit(QuoteRuleToken        & node){ DoVisit<QuoteRuleToken   
 void CFGPassBase::Visit(IdentifierRuleToken   & node){ DoVisit<IdentifierRuleToken   >(node);}
 void CFGPassBase::Visit(RuleHeadNode          & node){ DoVisit<RuleHeadNode          >(node);}
 void CFGPassBase::Visit(RuleBodyNode          & node){ DoVisit<RuleBodyNode          >(node);}
-void CFGPassBase::Visit(RuleNode              & node){ DoVisit<RuleNode              >(node);}
-void CFGPassBase::Visit(RangeCharsetToken     & node){ DoVisit<RangeCharsetToken     >(node);}
+//void CFGPassBase::Visit(RuleNode              & node){ DoVisit<RuleNode              >(node);}
+//void CFGPassBase::Visit(RangeCharsetToken     & node){ DoVisit<RangeCharsetToken     >(node);}
 void CFGPassBase::Visit(LiteralCharsetToken   & node){ DoVisit<LiteralCharsetToken   >(node);}
 void CFGPassBase::Visit(IdentifierCharsetToken& node){ DoVisit<IdentifierCharsetToken>(node);}
 void CFGPassBase::Visit(CharCharsetToken      & node){ DoVisit<CharCharsetToken      >(node);}
 void CFGPassBase::Visit(QuoteCharsetToken     & node){ DoVisit<QuoteCharsetToken     >(node);}
 void CFGPassBase::Visit(CharsetBodyNode       & node){ DoVisit<CharsetBodyNode       >(node);}
 void CFGPassBase::Visit(CharsetHeadNode       & node){ DoVisit<CharsetHeadNode       >(node);}
-void CFGPassBase::Visit(CharsetNode           & node){ DoVisit<CharsetNode           >(node);}
+//void CFGPassBase::Visit(CharsetNode           & node){ DoVisit<CharsetNode           >(node);}
 
+void CFGPassBase::Visit(RuleNode& node)
+{
+    node.head->AcceptPass(*this);
+    node.body->AcceptPass(*this);
+}
+
+void CFGPassBase::Visit(RangeCharsetToken& node)
+{
+    node.start->AcceptPass(*this);
+    node.end->AcceptPass(*this);
+}
+
+void CFGPassBase::Visit(CharsetNode& node)
+{
+    node.head->AcceptPass(*this);
+    node.body->AcceptPass(*this);
+}
 
 
 //template <class T>
